@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 from collections import namedtuple
-
+import re
+import math
 
 Command = namedtuple("Command", ["opcode", "operands"])
 Condition = namedtuple("Condition", ["opcode"])
-Counter = namedtuple("Counter", ["opcode"])
+
 
 commands = {\
     "add2"   : Command(   "0000", ("reg", "reg")),
@@ -60,12 +61,10 @@ conditions ={\
     "c"   : Condition("110"),
     "le"  : Condition("111")}
 
-conteurs = {\
-    "pc" : Counter("00"),
-    "sp" : Counter("01"),
-    "a0" : Counter("10"),
-    "a1" : Counter("11")}
 
+
+class TokenError(ValueError):
+    pass
 
 NB_REG = 8
 NB_BIT_REG = math.ceil(math.log(NB_REG, 2))
@@ -74,20 +73,126 @@ NB_BIT_REG = math.ceil(math.log(NB_REG, 2))
 def binary_repr(n, k):
     """Given n an unsigned int, it return it's binary representation on k bits"""
 
+    unfilled = bin(n)[2:]
+    
+    if len(unfilled) > k:
+        raise TokenError("Too long binary")
 
+    return "0" * (k-len(unfilled)) + unfilled
+
+re_reg = re.compile(r"^r([0-9]+)$")
 def asm_reg(s):
-    "converts the string s into its encoding"
 
-    assert len(s) >= 2
-    assert s[0]   == 'r'
+    res = re_reg.findall(s)
 
-    val = int(s[1:])
-    # If the value is inccorect, it will raise an error.
+    if len(res) != 1:
+        raise TokenError("invalid register syntax")
 
-    assert 0 =< val < NB_REG
+    val = int(res[0]) # No possible error here.
 
-    return binary_repr(val, NB_BIT_REG) 
-    # thanks stack overflow. The 3 is the number of bits
+    assert 0 <= val < NB_REG
+    
+    return binary_repr(val, NB_BIT_REG)
+
+re_const = re.compile(r"^([+-]?0x[0-9A-Fa-f]+)|([+-]?[0-9]+)$")
+def asm_const(s):
+    res = re_const.findall(s)
+    # res in the form [("0x12AefF3", "120328')]
+
+    if len(res) != 1:
+        raise TokenError("invalid constant syntax")
+
+    # Reading the regular expression
+    if len(res[0][0]) > 0: # hexa
+        val = int(res[0][0], 0x10)
+    elif len(res[0][1]) > 0: # decimal
+        val = int(res[0][1])
+    else:
+        TokenError("invalid constant syntax : empty constant")
+
+
+    # Encoding the prefix-free ALU constant
+
+    if val in range(2**1):
+        # Range in NOT a list in python3
+        return   "0" + binary_repr(val, 1)
+    elif val in range(2**8):
+        return  "10" + binary_repr(val, 8)
+    elif val in range(2**32):
+        return "110" + binary_repr(val, 32)
+    elif val in range(2**64):
+        return "111" + binary_repr(val, 64)
+    else:
+        TokenError("invalid constant : Not in range")
+
+
+re_dir = re.compile(r"(left)|(right)")
+def asm_dir(s):
+    res = re_dir.findall(s)
+    # res in the form [("left", "right")]
+
+    if len(res) != 1:
+        raise TokenError("invalid direction syntax")
+
+    if len(res[0][0]) > 0 : # left
+        val = 0
+    elif len(res[0][1]) > 0 : # right
+        val = 1
+    else:
+        TokenError("invalid direction syntax : empty")
+
+    return binary_repr(val, 1)
+
+
+re_shiftval = re.compile(r"^(0x[0-9A-Fa-f]+)|([0-9]+)$")
+def asm_shiftval(s):
+    res = re_shiftval.findall(s)
+    # res in the form [("0x12AefF3", "120328')]
+
+    if len(res) != 1:
+        raise TokenError("invalid shiftval syntax")
+
+    # Reading the regular expression
+    if len(res[0][0]) > 0: # hexa
+        val = int(res[0][0], 0x10)
+    elif len(res[0][1]) > 0: # decimal
+        val = int(res[0][1])
+    else:
+        TokenError("invalid shiftval syntax : empty shiftval")
+
+    if val == 1:
+        return binary_repr(val, 1)
+    elif val in range(2**6):
+        return "0" + binary_repr(val, 6)
+    else:
+        TokenError("invalid shiftval : Not in range")
+
+
+Counter = namedtuple("Counter", ["opcode"])
+ctr = {\
+    "pc" : Counter("00"),
+    "sp" : Counter("01"),
+    "a0" : Counter("10"),
+    "a1" : Counter("11")}
+re_ctr = re.compile(r"(pc|sp|a0|a1)")
+def asm_ctr(s):
+    res = re_ctr.findall(s)
+
+    if len(res) != 1:
+        raise TokenError("invalid counter syntax")
+
+    val = res[0]
+
+    return ctr[val].opcode
+
+
+
+def asm_size(s):
+    raise NotImplementedError
+
+def asm_addr(s):
+    raise NotImplementedError
+
 
 
 def asm_remove_comments(s):
@@ -100,15 +205,14 @@ def asm_line(s):
     if len(cmds) == 0:
         return
 
-    cmd = command[comds[0]]
+    cmd = commands[cmds[0]]
     args = cmds[1:]
 
     linecode = []
     linecode.append(cmd.opcode)
+    print(linecode)
  
     assert len(cmd.operands) == len(args)
-
-    encounter_address = False
 
     for value_type, value in zip(cmd.operands, args):
 
@@ -131,24 +235,44 @@ def asm_line(s):
             linecode.append(asm_size(value))
 
         elif value_type == "addr":
-            encounter_address = True
             linecode.append(asm_addr(value))
 
         else:
             raise ValueError("Unknow value type : {}".format(value_type))
 
 
-    return encounter_address, "".join(linecode)
+    return " ".join(linecode)
 
 def asm_doc(s):
     bitcode = []
     for line_nb, line in enumerate(s.split("\n"), 1): 
         # For each line, enumeration begin at 1.
         try:
-            bitcode.append(asm_line(line)[1])
+            bitcode.append(asm_line(line))
         except:
             print("/!\ error at line {}".format(line_nb))
             print(line)
             print()
             raise
 
+
+    return "\n".join(bitcode)
+
+
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename', action='store',
+                        type=str,
+                        help='name of the source file.  "python asm.py toto.s" assembles toto.s into toto.obj')
+
+
+    args = parser.parse_args()
+    
+    with open(args.filename, "r") as rf:
+        res = asm_doc(rf.read())
+
+    with open("a.out", "w+") as wf:
+        wf.write(res)
