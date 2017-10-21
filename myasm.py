@@ -346,8 +346,6 @@ def asm_doc(s):
             print()
             raise
 
-    print(bitcode)
-
     return "\n".join(bitcode)
 
 
@@ -363,8 +361,18 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    with open(args.filename, "r") as rf:
+    with open(args.filename + ".s", "r") as rf:
         res = asm_doc(rf.read())
 
-    with open("a.out", "w+") as wf:
+
+    with open(args.filename + ".debug", "w+") as wf:
         wf.write(res)
+
+
+    res = res.replace("\n", "")
+    res = res.replace(" ", "")
+    res = res + "0" * ((8-len(res))%8) # Adding zeros at the end
+    bin_ = int(res, 2).to_bytes(len(res)//8, byteorder='big') # Converting to byte object
+
+    with open(args.filename + ".bin", "wb+") as wf:
+        wf.write(bin_)

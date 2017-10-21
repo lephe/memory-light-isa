@@ -10,9 +10,8 @@ by alain
 
 ```python3 myasm.py filename```
 
-Où filename est le fichier d'entrée. La sortie est toujours `a.out`. :^) Il
-n'y a pas pour le moment d'une option -o finameout. Le fichier de sortie mets
-des espace et des sauts de ligne pour pouvoir relire à la main le fichier.
+Où `filename.s` est le fichier d'entrée, `filename.debug` est le fichier de
+debug, et `filename.bin` est le fichier de sortie pour le simulateur.
 
 ### Description du code
 
