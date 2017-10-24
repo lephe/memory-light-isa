@@ -11,7 +11,7 @@ obj	= $(src:src/%=build/%.o)
 
 cflags	= -Wall -Wextra -std=c11 -I include
 dflags	= -MT $@ -MMD -MP -MF $(@:.o=.d)
-lflags	= $(cflags)
+lflags	= $(cflags) -lncurses
 
 $(target): $(obj)
 	gcc $^ -o $@ $(lflags)

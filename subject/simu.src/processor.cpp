@@ -23,8 +23,8 @@ void Processor::von_Neuman_step(bool debug) {
 	int condcode=0;
 	int counter=0;
 	int size=0;
-	uword offset; 
-	uint64_t constop=0; 
+	uword offset;
+	uint64_t constop=0;
 	int dir=0;
 	// each instruction will use some of the following variables:
 	// all unsigned, to be cast to signed when required.
@@ -34,7 +34,7 @@ void Processor::von_Neuman_step(bool debug) {
 	doubleword fullr;
 	bool manage_flags=false; // used to factor out the flag management code
 	int instr_pc = pc; // for the debug output
-	
+
 	// read 4 bits.
 	read_bit_from_pc(opcode);
 	read_bit_from_pc(opcode);
@@ -58,7 +58,7 @@ void Processor::von_Neuman_step(bool debug) {
 		read_reg_from_pc(regnum1);
 		read_const_from_pc(constop);
 		uop1 = r[regnum1];
-		uop2 = constop; 
+		uop2 = constop;
 		fullr = ((doubleword) uop1) + ((doubleword) uop2); // for flags
 		ur = uop1 + uop2;
 		r[regnum1] = ur;
@@ -69,12 +69,12 @@ void Processor::von_Neuman_step(bool debug) {
 		read_addr_from_pc(offset);
 		pc += offset;
 		m -> set_counter(PC, (uword)pc);
-		manage_flags=false;		
+		manage_flags=false;
 		break;
 
 		// begin sabote
 		// end sabote
-		
+
 	case 0x8: // shift
 		read_bit_from_pc(dir);
 		read_reg_from_pc(regnum1);
@@ -91,7 +91,7 @@ void Processor::von_Neuman_step(bool debug) {
 		r[regnum1] = ur;
 		zflag = (ur==0);
 		// no change to nflag
-		manage_flags=false;		
+		manage_flags=false;
 		break;
 
 		// begin sabote
@@ -103,26 +103,26 @@ void Processor::von_Neuman_step(bool debug) {
 		read_bit_from_pc(opcode);
 		read_bit_from_pc(opcode);
 		switch(opcode) {
-			
+
 		case 0b110100: // write
 			// begin sabote
 			//end sabote
 			break;
 		}
-		break; // Do not forget this break! 
-		
+		break; // Do not forget this break!
+
 	case 0xe:
 	case 0xf:
 		//read 3 more bits
 		read_bit_from_pc(opcode);
 		read_bit_from_pc(opcode);
 		read_bit_from_pc(opcode);
-		
+
 		// begin sabote
 		// end sabote
 		break;
 	}
-	
+
 	// flag management
 	if(manage_flags) {
 		zflag = (ur==0);
@@ -131,12 +131,12 @@ void Processor::von_Neuman_step(bool debug) {
 	}
 
 	if (debug) {
-		cout << "after instr: " << opcode 
+		cout << "after instr: " << opcode
 				 << " at pc=" << hex << setw(8) << setfill('0') << instr_pc
 				 << " (newpc=" << hex << setw(8) << setfill('0') << pc
-				 << " mpc=" << hex << setw(8) << setfill('0') << m->counter[0] 
-				 << " msp=" << hex << setw(8) << setfill('0') << m->counter[1] 
-				 << " ma0=" << hex << setw(8) << setfill('0') << m->counter[2] 
+				 << " mpc=" << hex << setw(8) << setfill('0') << m->counter[0]
+				 << " msp=" << hex << setw(8) << setfill('0') << m->counter[1]
+				 << " ma0=" << hex << setw(8) << setfill('0') << m->counter[2]
 				 << " ma1=" << hex << setw(8) << setfill('0') << m->counter[3] << ") ";
 			//				 << " newpc=" << hex << setw(9) << setfill('0') << pc;
 		cout << " zcn = " << (zflag?1:0) << (cflag?1:0) << (nflag?1:0);
@@ -186,7 +186,7 @@ void Processor::read_const_from_pc(uint64_t& var) {
 	for(int i=0; i<size; i++) {
 		var = (var<<1) + m->read_bit(PC);
 		pc++;
-	}		
+	}
 }
 
 

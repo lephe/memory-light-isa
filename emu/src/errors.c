@@ -40,7 +40,7 @@ void error_msg(error_t level, const char *format, ...)
 	va_end(args);
 
 	/* If required, call strerror() for more detail */
-	if(call_perror) fputs(strerror(e), stderr);
+	if(call_perror) fputs(": ", stderr), fputs(strerror(e), stderr);
 	putchar('\n');
 
 	/* Set the error flag or leave when required */

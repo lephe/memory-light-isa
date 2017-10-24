@@ -6,6 +6,9 @@
 
 #include <defs.h>
 #include <errors.h>
+#include <memory.h>
+#include <cpu.h>
+#include <debugger.h>
 
 //---
 //	Command-line parsing
@@ -26,7 +29,7 @@ typedef struct
 	const char *filename;
 } opt_t;
 
-/* sizetoi() -- parse nonnull integers supporting 'k' and 'M' */
+/* sizetoi() -- parse nonnull integers with 'k' and 'M' suffixes */
 uint32_t sizetoi(const char *arg)
 {
 	if(!isdigit(arg[0])) return 0;
@@ -91,6 +94,9 @@ void parse_args(int argc, char **argv, opt_t *opt)
 		/* Help message */
 		else if(!strcmp(arg, "--help")) opt->help = 1;
 
+		/* Unknown predicates */
+		else if(arg[0] == '-') error("unknown predicate '%s'", arg);
+
 		/* Other arguments are considered to be the input file name */
 		else
 		{
@@ -121,53 +127,46 @@ const char *help_string =
 "  --memory-size <size>   Set the total memory size (default 4M)\n"
 "Both constants may use the 'k' or 'M' suffixes (eg. 16k or 2M).\n";
 
+memory_t *mem = NULL;
+cpu_t *cpu = NULL;
+
+void help(const char **argv)
+{
+	printf(help_string, argv[0]);
+	exit(0);
+}
+
+void quit(void)
+{
+	cpu_destroy(cpu);
+	memory_destroy(mem);
+}
+
 int main(int argc, char **argv)
 {
-	/* Parse command-line options */
+	atexit(quit);
 
+	/* Parse command-line arguments */
 	opt_t opt;
 	parse_args(argc, argv, &opt);
 
-	if(argc == 1 || opt.help)
-	{
-		printf(help_string, argv[0]);
-		return 0;
-	}
-
+	if(argc == 1 || opt.help) help((const char **)argv);
 	if(!opt.filename) fatal("no input file");
 
-	/* Check the memory size or set defaults */
+	if(opt.mode == mode_run)
+		fatal("cannot honor run mode x_x (TODO)");
+	if(opt.mode == mode_graphical)
+		fatal("cannot honor graphical mode x_x (TODO)");
 
-	if(!opt.stack) opt.stack = 1 << 20;
-	if(!opt.memsize) opt.memsize = 4 << 20;
-	uint32_t vram_size = 1 << 20;
+	/* Allocate a virtual memory and load the program into it */
+	mem = memory_new(opt.memsize, opt.stack, 0);
+	memory_load(mem, opt.filename);
 
-	/* Open and load the binary file into memory.
-	   Also check that the provided memory geometry is consistent */
+	/* Create a CPU and give it the memory */
+	cpu_t *cpu = cpu_new(mem);
 
-	FILE *fp = fopen(opt.filename, "r");
-	if(!fp) fatal("# cannot open '%s': ", opt.filename);
+	/* Start the debugger */
+	debug(cpu);
 
-	unsigned long size;
-	fseek(fp, 0, SEEK_END);
-	size = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-
-	error_clear();
-
-	if(opt.stack > opt.memsize)
-		fatal("inconsistent memory layout, no space left for stack");
-	if(opt.stack + vram_size > opt.memsize)
-		fatal("inconsistent memory layout, no space left for video "
-			"memory");
-	if(opt.stack + vram_size == opt.memsize)
-		warn("no space left for the data segment");
-	if(size > opt.stack)
-		error("program is too large to fit in the code segment (%d > "
-			"%d)", size, opt.stack);
-
-	error_check();
-
-	fclose(fp);
 	return 0;
 }
