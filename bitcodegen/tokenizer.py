@@ -84,13 +84,18 @@ class Parser(object):
 
         return self.run()
 
-    def unstack_until(self, predicate, * , want_res=False):
+    def unstack_until(self, predicate, * , ignore=lambda x: False, want_res=False):
+        """ Take a predicate, and unstack until the predicate. if want_res est vrai, then
+            return all elements whom have been unstacked"""
 
         if want_res:
 
             res = Stack()
             while predicate(self.stack[-1]):
-                res.push(self.stack.pop())
+                if not ignore(self.stack[-1]):
+                    res.push(self.stack.pop())
+
+            res.push(self.stack.pop())
 
             return tuple(res)
 
@@ -98,8 +103,18 @@ class Parser(object):
             while predicate(self.stack[-1]):
                 self.stack.pop()
 
-            return ()  # Return an empty tuple.
+            self.stack.pop()
 
+    def run(self):
+        for token in self.lexer:
+            if token.typ is NEWLINE:
+                pass # TODO All the logic is here
+
+            elif token.typ is COMMENT:
+                pass # Nothing to do
+
+            elif token.typ is 
+    
     def run(self):
         for token in tokens_generator:
             if token.typ is OPERATION:

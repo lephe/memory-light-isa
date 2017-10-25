@@ -17,9 +17,13 @@ class Stack(collections.deque):
 
 
 def huffman(c):
-
-    """take a collections.Counter, and generate an huffman-tree. O(n) = n log(n)
-    worst case."""
+    """Generate an huffman tree
+    
+    :param c (collections.Counter): Counter with all the elements
+    :returns: list of couples. First element is the code, second is the element it is bound to.
+    :complexity:
+        :math:`O(n \log n)` worst case, for n the number of differents elements.
+    """
 
     # Heap est une foret d'arbres étiquetées par la somme des frequences des
     # feuilles des arbres, où les feuilles des arbres sont étiquetés par les
