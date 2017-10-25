@@ -1,17 +1,22 @@
 import collections
 
+
 class Queue(collections.deque):
     """ Fast Queue based on collections.deque"""
+
     def push(self, x):
         self.append_left()
 
     def is_empty(self):
         return len(self) == 0
 
+      
 class Stack(collections.deque):
     """ Fast Stack based on collections.deque"""
+
     def push(self, x):
         self.append(x)
+
     def is_empty(self):
         return len(self) == 0
 
