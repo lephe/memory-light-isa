@@ -1,11 +1,12 @@
 import collections
+import re
 
 
 class Queue(collections.deque):
     """ Fast Queue based on collections.deque"""
 
     def push(self, x):
-        self.append_left()
+        self.appendleft()
 
     def is_empty(self):
         return len(self) == 0
@@ -20,6 +21,29 @@ class Stack(collections.deque):
     def is_empty(self):
         return len(self) == 0
 
+def add_global_enum(e):
+    """ Add all enum's value to globals"""
+    for name, member in e.__members__.items():
+        globals()[name] = member
+
+def del_global_enum(e):
+    """ Remove all enum's value globals"""
+    for name, _ in e.__members__.items():
+        del globals()[name]
+
+
+def sub(s, d):
+    """ Replace all occurences in a string
+
+    :param s (string): string to be parsed
+    :param d (dict[string, string]): mapping dict, all keys will be remplaced by it's value.
+    :return: s with all instances remplaced with thoses of string 
+    :complexity:
+        :math:`O(k n)` for k the length of dict, and n the length of the string"""
+
+    pattern = re.compile('(' + '|'.join(d.keys()) + ')')
+
+    return pattern.sub(lambda x: d[x.group()], s)
 
 def huffman(c):
     """Generate an huffman tree

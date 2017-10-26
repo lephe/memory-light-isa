@@ -1,6 +1,24 @@
-from enum import Enum
+import enum
+import collections
 import re
 
+
+
+Token = collections.namedtuple('Token', ['typ', 'value', 'line', 'column'])
+
+class LexType(enum.Enum):
+    OPERATION = enum.auto()
+    REGISTER  = enum.auto()
+    DIRECTION = enum.auto()
+    NUMBER    = enum.auto()
+    COMMENT   = enum.auto()
+    CONDITION = enum.auto()
+    COUNTER   = enum.auto()
+    NEWLINE   = enum.auto()
+    SKIP      = enum.auto()
+    MISMATCH  = enum.auto()
+    ENDFILE   = enum.auto()
+    LABEL     = enum.auto()
 
 def inv_dict_list(d):
     inv_d = dict()
@@ -11,29 +29,6 @@ def inv_dict_list(d):
 
     return inv_d
 
-def sub(s, d):
-    """ Replace all occurences in a string
-
-    :param s (string): string to be parsed
-    :param d (dict[string, string]): mapping dict, all keys will be remplaced by it's value.
-    :return: s with all instances remplaced with thoses of string 
-    :complexity:
-        :math:`O(k n)` for k the length of dict, and n the length of the string"""
-
-    pattern = re.compile('(' + '|'.join(d.keys()) + ')')
-
-    return pattern.sub(lambda x: d[x.group()], s)
-
-def add_global_enum(e):
-    """ Add all enum's value to globals"""
-
-    for name, member in e.__members__.items():
-        globals()[name] = member
-
-def del_global_enum(e):
-    """ Remove all enum's value globals"""
-    for name, _ in e.__members__.items():
-        del globals()[name]
 
 possible_transition = { \
     "add" :    ["add2", "add2i", "add3", "add3i"],
@@ -55,7 +50,7 @@ possible_transition = { \
     "return" : ["return"],
     "asr" :    ["asr"]}
 
-inverse_possible_transition = dict()
+inverse_possible_transition = inv_dict_list(possible_transition)
 
 
 
@@ -73,65 +68,71 @@ s = '''
 
 
 
+class ValueType(enum.Enum):
+    REGISTER   = enum.auto()
+    DIRECTION  = enum.auto()
+    CONDITION  = enum.auto()
+    MEMCOUNTER = enum.auto()
+    UCONSTANT  = enum.auto() # Unsigned Constant
+    SCONSTANT  = enum.auto() # Signed Constant
+    RADDRESS   = enum.auto() # Relative address
+    AADDRESS   = enum.auto() # Absolute address
+    SHIFTVAL   = enum.auto()
+    SIZE       = enum.auto()
 
 
-ValueType = Enum("ValueType", "REGISTER DIRECTION CONDITION MEMCOUNTER UCONSTANT SCONSTANT RADDRESS AADDRESS SIZE SHIFTVAL")
-
-add_global_enum(ValueType)
-
+VT = ValueType
 asr_specs = {\
-    "add2"   : (REGISTER, REGISTER),
-    "add2i"  : (REGISTER, UCONSTANT),
-    "add3"   : (REGISTER, REGISTER, REGISTER),
-    "add3i"  : (REGISTER, REGISTER, UCONSTANT),
+    "add2"   : (VT.REGISTER, VT.REGISTER),
+    "add2i"  : (VT.REGISTER, VT.UCONSTANT),
+    "add3"   : (VT.REGISTER, VT.REGISTER, VT.REGISTER),
+    "add3i"  : (VT.REGISTER, VT.REGISTER, VT.UCONSTANT),
 
-    "sub2"   : (REGISTER, REGISTER),
-    "sub2i"  : (REGISTER, UCONSTANT),
-    "sub3"   : (REGISTER, REGISTER, REGISTER),
-    "sub3i"  : (REGISTER, REGISTER, UCONSTANT),
+    "sub2"   : (VT.REGISTER, VT.REGISTER),
+    "sub2i"  : (VT.REGISTER, VT.UCONSTANT),
+    "sub3"   : (VT.REGISTER, VT.REGISTER, VT.REGISTER),
+    "sub3i"  : (VT.REGISTER, VT.REGISTER, VT.UCONSTANT),
 
-    "cmp"    : (REGISTER, REGISTER),
-    "cmpi"   : (REGISTER, SCONSTANT),
+    "cmp"    : (VT.REGISTER, VT.REGISTER),
+    "cmpi"   : (VT.REGISTER, VT.SCONSTANT),
     
-    "let"    : (REGISTER, REGISTER),
-    "leti"   : (REGISTER, SCONSTANT),
+    "let"    : (VT.REGISTER, VT.REGISTER),
+    "leti"   : (VT.REGISTER, VT.SCONSTANT),
     
-    "shift"  : (DIRECTION, REGISTER, SHIFTVAL),
+    "shift"  : (VT.DIRECTION, VT.REGISTER, VT.SHIFTVAL),
     
-    "readze" : (MEMCOUNTER, SIZE, REGISTER),
+    "readze" : (VT.MEMCOUNTER, VT.SIZE, VT.REGISTER),
     
-    "readse" : (MEMCOUNTER, SIZE, REGISTER),
+    "readse" : (VT.MEMCOUNTER, VT.SIZE, VT.REGISTER),
     
-    "jump"   : (RADDRESS,),
-    "jumpif" : (CONDITION, RADDRESS),
+    "jump"   : (VT.RADDRESS,),
+    "jumpif" : (VT.CONDITION, VT.RADDRESS),
 
-    "or2"    : (REGISTER, REGISTER),
-    "or2i"   : (REGISTER, SCONSTANT),
-    "or3"    : (REGISTER, REGISTER, REGISTER),
-    "or3i"   : (REGISTER, REGISTER, SCONSTANT),
+    "or2"    : (VT.REGISTER, VT.REGISTER),
+    "or2i"   : (VT.REGISTER, VT.SCONSTANT),
+    "or3"    : (VT.REGISTER, VT.REGISTER, VT.REGISTER),
+    "or3i"   : (VT.REGISTER, VT.REGISTER, VT.SCONSTANT),
 
-    "and2"   : (REGISTER, REGISTER),
-    "and2i"  : (REGISTER, SCONSTANT),
-    "and3"   : (REGISTER, REGISTER, REGISTER),
-    "and3i"  : (REGISTER, REGISTER, SCONSTANT),
+    "and2"   : (VT.REGISTER, VT.REGISTER),
+    "and2i"  : (VT.REGISTER, VT.SCONSTANT),
+    "and3"   : (VT.REGISTER, VT.REGISTER, VT.REGISTER),
+    "and3i"  : (VT.REGISTER, VT.REGISTER, VT.SCONSTANT),
 
-    "write"  : (MEMCOUNTER, SIZE, REGISTER),
-    "call"   : (AADDRESS,),
-    "setctr" : (MEMCOUNTER, REGISTER),
-    "getctr" : (MEMCOUNTER, REGISTER),
-    "push"   : (REGISTER,),
+    "write"  : (VT.MEMCOUNTER, VT.SIZE, VT.REGISTER),
+    "call"   : (VT.AADDRESS,),
+    "setctr" : (VT.MEMCOUNTER, VT.REGISTER),
+    "getctr" : (VT.MEMCOUNTER, VT.REGISTER),
+    "push"   : (VT.REGISTER,),
     "return" : (),
     
-    "xor3"   : (REGISTER, REGISTER, REGISTER),
-    "xor3i"  : (REGISTER, REGISTER, SCONSTANT),
+    "xor3"   : (VT.REGISTER, VT.REGISTER, VT.REGISTER),
+    "xor3i"  : (VT.REGISTER, VT.REGISTER, VT.SCONSTANT),
 
-    "asr3"   : (REGISTER, REGISTER, SHIFTVAL),
+    "asr3"   : (VT.REGISTER, VT.REGISTER, VT.SHIFTVAL),
 
     "reserved1"  : (),
     "reserved2"  : (),
     "reserved3"  : ()}
 
-del_global_enum(ValueType)
+del VT
 
-print(ValueType.REGISTER)
-print(REGISTER)

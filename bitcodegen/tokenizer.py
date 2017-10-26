@@ -6,71 +6,7 @@ import itertools
 from .utils import huffman, Queue, Stack
 from .errors import TokenError, ParserError
 
-Token = collections.namedtuple('Token', ['typ', 'value', 'line', 'column'])
 
-TokenType = enum.Enum('TokenType', \
-    "OPERATION REGISTER DIRECTION NUMBER COMMENT CONDITION COUNTER NEWLINE SKIP MISMATCH ENDFILE LABEL")
-
-# Petit hack pour ajouter les valeurs de mon énum dans scope global
-for name, member in TokenType.__members__.items():
-    globals()[name] = member
-
-def lexer(code):
-    """ Code adapté depuis https://docs.python.org/3/library/re.html
-    
-    Prend une chaine de caractères encodées dans un langage pre-assembleur et
-    génére des tokens en fonctions des operandes, et des valeures"""
-
-    token_specification = [
-        # Operators
-        (OPERATION, r'add|sub|cmp|let|shift|readze|readse|jump|or|and|write|call|setctr|getctr|push|return|xor|asr'),
-
-        # Values
-        (REGISTER,  r'(?:r|R)[0-9]+'),
-        (DIRECTION, r'left|right'),
-        (NUMBER,    r'[+-]?(?:0x[0-9A-Fa-f]+|[0-9]+)'),
-        (COMMENT,   r';.*'),
-        (CONDITION, r'eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le'),
-        (COUNTER,   r'pc|sp|a0|a1'),
-        (LABEL,     r'[a-zA-Z][a-zA-Z0-9]*:')
-        
-        # Tokenizer stuff
-        (NEWLINE,   r'\n'),
-        (SKIP,      r'[ \t]+'),
-        (MISMATCH,  r'.'),
-        (ENDFILE,   r'$')
-    ]
-
-    tok_regex = '|'.join('(?P<%s>%s)' % (str(name).split(".")[1], re) for name, re in token_specification)
-
-    line_num = 1
-    line_start = 0
-    for mo in re.finditer(tok_regex, code):
-        kind = mo.lastgroup
-        value = mo.group(kind)
-
-        kind = TokenType.__members__[kind]
-
-        if kind is NEWLINE:
-            column = mo.start() - line_start
-            line_start = mo.end()
-            line_num += 1
-            yield Token(kind, value, line_num-1, column)
-
-        elif kind is SKIP:
-            pass
-
-        elif kind is MISMATCH:
-            raise TokenError(f'{value!r} unexpected on line {line_num}')
-
-        elif kind is ENDFILE:
-            # Ajout d'une fin de ligne à la fin de chaque programme.
-            yield Token(NEWLINE, value, line_num, column)
-            yield Token(ENDFILE, value, line_num, column)
-
-        else:
-            column = mo.start() - line_start
-            yield Token(kind, value, line_num, column)
 
 
 
@@ -112,8 +48,6 @@ class Parser(object):
 
             elif token.typ is COMMENT:
                 pass # Nothing to do
-
-            elif token.typ is 
     
     def run(self):
         for token in tokens_generator:
