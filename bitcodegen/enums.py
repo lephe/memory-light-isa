@@ -1,6 +1,5 @@
 import enum
 import collections
-import re
 
 
 
@@ -8,24 +7,24 @@ Token = collections.namedtuple('Token', ['typ', 'value', 'line', 'column'])
 
 class LexType(enum.Enum):
     OPERATION = enum.auto()
-    REGISTER  = enum.auto()
     DIRECTION = enum.auto()
-    NUMBER    = enum.auto()
-    COMMENT   = enum.auto()
     CONDITION = enum.auto()
-    COUNTER   = enum.auto()
-    NEWLINE   = enum.auto()
-    SKIP      = enum.auto()
-    MISMATCH  = enum.auto()
-    ENDFILE   = enum.auto()
-    LABEL     = enum.auto()
+    REGISTER = enum.auto()
+    MISMATCH = enum.auto()
+    COMMENT = enum.auto()
+    COUNTER = enum.auto()
+    NEWLINE = enum.auto()
+    ENDFILE = enum.auto()
+    NUMBER = enum.auto()
+    LABEL = enum.auto()
+    SKIP = enum.auto()
 
-def inv_dict_list(d):
+def inv_dict_list(dictionnary):
     inv_d = dict()
 
-    for k1, v in d.items():
-        for k2 in v:
-            inv_d[k2] = k1
+    for key1, value in dictionnary.items():
+        for key2 in value:
+            inv_d[key2] = key1
 
     return inv_d
 
@@ -69,19 +68,20 @@ s = '''
 
 
 class ValueType(enum.Enum):
-    REGISTER   = enum.auto()
-    DIRECTION  = enum.auto()
-    CONDITION  = enum.auto()
     MEMCOUNTER = enum.auto()
-    UCONSTANT  = enum.auto() # Unsigned Constant
-    SCONSTANT  = enum.auto() # Signed Constant
-    RADDRESS   = enum.auto() # Relative address
-    AADDRESS   = enum.auto() # Absolute address
-    SHIFTVAL   = enum.auto()
-    SIZE       = enum.auto()
+    DIRECTION = enum.auto()
+    CONDITION = enum.auto()
+    UCONSTANT = enum.auto() # Unsigned Constant
+    SCONSTANT = enum.auto() # Signed Constant
+    RADDRESS = enum.auto() # Relative address
+    AADDRESS = enum.auto() # Absolute address
+    SHIFTVAL = enum.auto()
+    SIZE = enum.auto()
+    REGISTER = enum.auto()
 
 
 VT = ValueType
+
 asr_specs = {\
     "add2"   : (VT.REGISTER, VT.REGISTER),
     "add2i"  : (VT.REGISTER, VT.UCONSTANT),

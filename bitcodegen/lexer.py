@@ -1,24 +1,22 @@
-import collections
+""" lexer.py """
 import re
 
 from .enums import Token, LexType, inverse_possible_transition
-from .errors import TokenError, ParserError
-from .util import Queue, Stack, add_global_enum, del_global_enum, huffman, sub
-
-
-
+from .errors import TokenError
+from .util import Stack, huffman, sub
 
 
 class Lexer(object):
     """ Code adapté depuis https://docs.python.org/3/library/re.html
-    
+
     Prend une chaine de caractères encodées dans un langage pre-assembleur et
     génére des tokens en fonctions des operandes, et des valeures"""
 
     def __init__(self):
         token_specification = { \
             # Operators
-            LexType.OPERATION : r'add|sub|cmp|let|shift|readze|readse|jump|or|and|write|call|setctr|getctr|push|return|xor|asr',
+            LexType.OPERATION : \
+r'add|sub|cmp|let|shift|readze|readse|jump|or|and|write|call|setctr|getctr|push|return|xor|asr',
 
             # Values
             LexType.REGISTER  : r'(?:r|R)[0-9]+',
@@ -28,7 +26,7 @@ class Lexer(object):
             LexType.CONDITION : r'eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le',
             LexType.COUNTER   : r'pc|sp|a0|a1',
             LexType.LABEL     : r'[a-zA-Z][a-zA-Z0-9]*',
-            
+
             # Tokenizer stuff
             LexType.NEWLINE   : r'\n',
             LexType.SKIP      : r'[ \t]+',
@@ -36,12 +34,13 @@ class Lexer(object):
             LexType.ENDFILE   : r'$',
         }
 
-        tok_regex = '|'.join('(?P<%s>%s)' % (str(name).split(".")[1], re) for name, re in token_specification.items())
+        tok_regex = '|'.join('(?P<%s>%s)' % (str(name).split(".")[1], re) \
+        	for name, re in token_specification.items())
 
         self.rexp = re.compile(tok_regex)
 
         self.aliases = {\
-            LexType.CONDITION : {"z":"eq", "nz":"neq", "nc":"ge", "c":"lt"}
+            LexType.CONDITION : {"z":"eq", "nz":"neq", "nc":"ge", "c":"lt"}\
         }
 
 
@@ -114,6 +113,7 @@ class Lexer(object):
         """ value is a string in the form r'(?:r|R)[0-9]+' """
 
         return int(value[1:])
+
 
 if __name__ == '__main__':
     l = bitcodegen.Lexer()
