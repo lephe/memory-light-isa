@@ -2,121 +2,206 @@ import collections
 import re
 import heapq
 import enum
+import itertools
+from .utils import huffman, Queue, Stack
+from .errors import TokenError, ParserError
 
 
-Token = collections.namedtuple('Token', ['typ', 'value', 'line', 'column'])
-
-
-class Queue(collections.deque):
-    def push(self, x):
-        self.append_left()
-
-    def is_empty(self):
-        return len(self) == 0
-
-TokenType = enum.Enum('TokenType', \
-    "operation register direction number comment \
-     condition counter newline skip mismatch endfile")
-
-def lexer(code):
-    """ Code adapté depuis https://docs.python.org/3/library/re.html
-    
-    Prend une chaine de caractères encodées dans un langage pre-assembleur et
-    génére des tokens en fonctions des operandes, et des valeures"""
-
-    token_specification = [
-
-        # Operators
-        (TokenType.operation, r'add|sub|cmp|let|shift|readze|readse|jump|or|and|write|call|setctr|getctr|push|return|xor|asr'),
-
-        # Values
-        (TokenType.register,  r'(?:r|R)[0-9]+'),
-        (TokenType.direction, r'left|right'),
-        (TokenType.number,    r'[+-]?(?:0x[0-9A-Fa-f]+|[0-9]+)'),
-        (TokenType.comment,   r';.*'),
-        (TokenType.condition, r'eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le'),
-        (TokenType.counter,   r'pc|sp|a0|a1'),
-        
-        # Tokenizer stuff
-        (TokenType.newline,   r'\n'),
-        (TokenType.skip,      r'[ \t]'),
-        (TokenType.mismatch,  r'.'),
-        (TokenType.endfile,   r'$')
-    ]
-
-    tok_regex = '|'.join('(?P<%s>%s)' % (str(name).split(".")[1], re) for name, re in token_specification)
-
-    line_num = 1
-    line_start = 0
-    for mo in re.finditer(tok_regex, code):
-        kind = mo.lastgroup
-        value = mo.group(kind)
-        if kind is TokenType.newline:
-            column = mo.start() - line_start
-            line_start = mo.end()
-            line_num += 1
-            yield Token(kind, value, line_num-1, column)
-
-        elif kind is TokenType.skip:
-            pass
-
-        elif kind is TokenType.mismatch:
-            raise RuntimeError(f'{value!r} unexpected on line {line_num}')
-
-        elif kind is TokenType.endfile:
-            # Ajout d'une fin de ligne à la fin de chaque programme.
-            yield Token(TokenType.newline, value, line_num, column)
-            yield Token(TokenType.endfile, value, line_num, column)
-
-        else:
-            column = mo.start() - line_start
-            yield Token(kind, value, line_num, column)
 
 
 
 class Parser(object):
-    def __init__(self, tokens_generator):
-        self.tokens_generator = tokens_generator
-        self.queue = Queue()
+    def __init__(self, lexer = None):
+        self.lexer = lexer
+        self.stack = Stack()
 
-    def parse(self, tokens_generator):
-        self.tokens_generator = tokens_generator
-        self.run()
+    def parse(self, lexer):
+        self.lexer = lexer
+
+        return self.run()
+
+    def unstack_until(self, predicate, * , ignore=lambda x: False, want_res=False):
+        """ Take a predicate, and unstack until the predicate. if want_res est vrai, then
+            return all elements whom have been unstacked"""
+
+        if want_res:
+
+            res = Stack()
+            while predicate(self.stack[-1]):
+                if not ignore(self.stack[-1]):
+                    res.push(self.stack.pop())
+
+            res.push(self.stack.pop())
+
+            return tuple(res)
+
+        else:
+            while predicate(self.stack[-1]):
+                self.stack.pop()
+
+            self.stack.pop()
 
     def run(self):
+        for token in self.lexer:
+            if token.typ is NEWLINE:
+                pass # TODO All the logic is here
+
+            elif token.typ is COMMENT:
+                pass # Nothing to do
+    
+    def run(self):
         for token in tokens_generator:
-            if token.typ is TokenType.operation:
+            if token.typ is OPERATION:
                 # code inspiré par le module python http.server, classe BaseHTTPRequestHandler
                 mnname = 'asm_' + token.value
                 if not hasattr(self, mnname):
                     raise NotImplementedError()
 
                 method = getattr(self, mnname)
-                method(token)
+                try:
+                    method(token)
+                except ParserError:
+                    print(f"error at {token.line, token.column}")
+                    raise
 
-            elif token.typ is TokenType.newline:
+            elif token.typ is NEWLINE:
                 pass
 
-            elif token.typ is TokenType.comment:
+            elif token.typ is COMMENT:
                 pass
+            else:
+                raise ParserError()
 
             while not self.queue.is_empty:
                 yield self.queue.pop()
 
+
+    # parseur d'opérateurs
     def asm_add(self, token):
-        raise NotImplementedError()
+        try :
+            x = next(self.tokens_generator)
+            y = next(self.tokens_generator)
+            z = next(self.tokens_generator)
+
+        except StopIteration:
+            raise ParserError("not enought arguments for operand")
+
+        if (x, y, z) is (REGISTER, REGISTER, REGISTER):
+            self.queue.push(Token(token.typ, "add3", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+            self.queue.push(z)
+
+        elif (x, y, z) is (REGISTER, REGISTER, NUMBER):
+            self.queue.push(Token(token.typ, "add3i", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+            self.queue.push(z)
+
+        elif (x, y) is (REGISTER, REGISTER):
+            self.queue.push(Token(token.typ, "add2", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+        
+        elif (x, y) is (REGISTER, NUMBER):
+            self.queue.push(Token(token.typ, "add2i", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+        else:
+            raise ParserError("Invalid token")
 
     def asm_sub(self, token):
-        raise NotImplementedError()
+        try :
+            x = next(self.tokens_generator)
+            y = next(self.tokens_generator)
+            z = next(self.tokens_generator)
+
+        except StopIteration:
+            raise ParserError("not enought arguments for operand")
+
+        if (x, y, z) is (REGISTER, REGISTER, REGISTER):
+            self.queue.push(Token(token.typ, "sub3", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+            self.queue.push(z)
+
+        elif (x, y, z) is (REGISTER, REGISTER, NUMBER):
+            self.queue.push(Token(token.typ, "sub3i", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+            self.queue.push(z)
+
+        elif (x, y) is (REGISTER, REGISTER):
+            self.queue.push(Token(token.typ, "sub2", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+        
+        elif (x, y) is (REGISTER, NUMBER):
+            self.queue.push(Token(token.typ, "sub2i", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+        else:
+            raise ParserError("Invalid token")
 
     def asm_cmp(self, token):
-        raise NotImplementedError()
+        try : 
+            x = next(self.tokens_generator)
+            y = next(self.tokens_generator)
+
+        except StopIteration:
+            raise ParserError("not enought arguments for operand")
+
+        if (x, y) is (REGISTER, NUMBER):
+            self.queue.push(Token(token.typ, "cmpi", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+
+        elif (x, y) is (REGISTER, REGISTER):
+            self.queue.push(Token(token.typ, "cmp", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+
+        else:
+            raise ParserError("Invalid token")
 
     def asm_let(self, token):
-        raise NotImplementedError()
+        try : 
+            x = next(self.tokens_generator)
+            y = next(self.tokens_generator)
+
+        except StopIteration:
+            raise ParserError("not enought arguments for operand")
+
+        if (x, y) is (REGISTER, NUMBER):
+            self.queue.push(Token(token.typ, "leti", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+
+        elif (x, y) is (REGISTER, REGISTER):
+            self.queue.push(Token(token.typ, "let", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+
+        else:
+            raise ParserError("Invalid token")
 
     def asm_shift(self, token):
-        raise NotImplementedError()
+        try:
+            x = next(self.tokens_generator)
+            y = next(self.tokens_generator)
+            z = next(self.tokens_generator)
+
+        except StopIteration:
+            raise ParserError("not enought arguments for operand")
+
+        if (x, y, z) is (DIRECTION, REGISTER, NUMBER):
+            self.queue.push(Token(token.typ, "shift", token.line, token.column))
+            self.queue.push(x)
+            self.queue.push(y)
+            self.queue.push(z)
+
+        else:
+            raise ParserError("Invalid token")
 
     def asm_readze(self, token):
         raise NotImplementedError()
@@ -157,76 +242,47 @@ class Parser(object):
     def asm_asr(self, token):
         raise NotImplementedError()
 
-def huffman(c):
 
-    """take a collections.ounter, and generate an huffman-tree. O(n) = n log(n)
-    worst case."""
+def count_oprations(gene):
+    c = collections.Counter()
 
-    # Heap est une foret d'arbres étiquetées par la somme des frequences des
-    # feuilles des arbres, où les feuilles des arbres sont étiquetés par les
-    # clés de c. Heap est un tas-min pour des raisons de performance.
+    c.update(token.value for token in gene if token is OPERATION)
 
-    heap = []
-    for key, freq in c.most_common():
-
-        # Initialisation : On fabrique une foret de feuilles. On ne garde en
-        # mémoire que les feuilles et le chemin (en binaire) pour acceder à la
-        # feuille.
-        
-        heap.append((freq, [("", key)]))
-
-    if len(heap) == 0:
-        return []
-
-    if len(heap) == 1:
-        # Unique key.
-        return ["0", heap[0][0][1]]
-
-    heapq.heapify(heap)
-
-    while len(heap) > 1:
-
-        # Algorithme glouton : on prend les arbres les moins fréquents, et on
-        # les mets à coté.
-
-        freq_x, x = heapq.heappop(heap)
-        freq_y, y = heapq.heappop(heap)
-
-        z = [("0" + pos, key) for pos, key in x] + [("1" + pos, key) for pos, key in y]
-        freq_z = freq_x + freq_y
-        
-        # Et on repose le résultat dans le tas.        
-        heapq.heappush(heap, (freq_z, z))
-
-    # len(heap) = 1 ici.
-    tot, tree = heap[0]
-
-    return tree
+    return c
 
 statements = '''
     add r3 r5 r6
     add r1 343
-    shift left r2 31
-    let r1 R3 ; commentaire
 '''
 
 for token in lexer(statements):
     print(token)
 
 
-print("\n\n\n")
 
-c = collections.Counter()
+def compile_asm(s, * ,generate_tree=False):
 
-c.update(("a" for i in range(10)))
-c.update(("b" for i in range(10)))
-c.update(("c" for i in range(10)))
-c.update(("d" for i in range(10)))
-c.update(("e" for i in range(10)))
-c.update(("f" for i in range(10)))
-c.update(("g" for i in range(10)))
-c.update(("h" for i in range(10)))
+    # tokenize the pre-asm
+    lex = lexer(s)
 
-print(c)
+    # parse to convert in asm
+    par = Parser().parse(lex)
 
-print(huffman(c))
+    # duplicate the iterator
+    par1, par2 = itertools.tee(par)
+
+    # Generate and save the huffman-tree of the opcodes
+    c = count_oprations(par1)
+    hufftree = huffman(c)
+
+    with open("opcode.txt", "w+") as f:
+        for opcode, memonic in hufftree:
+            f.write(f"{memonic} {opcode}\n")
+
+    jumpcode = None
+
+
+
+
+compile_asm(statements)
+

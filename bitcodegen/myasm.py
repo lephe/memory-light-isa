@@ -279,7 +279,10 @@ def asm_addr_unsigned(s):
     else:
         raise TokenError("invalid unsigned address : not in range")
 
-    
+re_cond = re.compile(r"(eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le)")
+def asm_cond(s):
+    res = re_cond.findall(s)
+    return conditions[res[0]]
 
 
 
@@ -327,6 +330,9 @@ def asm_line(s):
 
         elif value_type == "addr_unsigned":
             linecode.append(asm_addr_unsigned(value))
+
+        elif value_type == "cond":
+            linecode.append(asm_addr_cond(value))
 
         else:
             raise ValueError("Unknow value type : {}".format(value_type))
