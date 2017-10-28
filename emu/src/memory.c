@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <endian.h>
 
 #include <memory.h>
 #include <errors.h>
@@ -36,11 +37,12 @@ memory_t *memory_new(uint32_t memsize, uint32_t stack, uint32_t vramsize)
 	memory_t *mem = data;
 
 	/* Filling in the structure fields */
-	mem->memsize = memsize;
-	mem->stack = stack;
-	mem->vramsize = vramsize;
-	mem->data = stack + vramsize;
-	mem->mem = data + base;
+	mem->memsize	= memsize;
+	mem->text	= 0x000000;
+	mem->stack	= stack;
+	mem->vramsize	= vramsize;
+	mem->data	= stack + vramsize;
+	mem->mem	= data + base;
 
 	return mem;
 }
@@ -70,6 +72,8 @@ void memory_load(memory_t *mem, const char *filename)
 
 	if(blocks < 1) error("# cannot read from '%s'", filename);
 	error_check();
+
+	mem->text = 8 * size;
 }
 
 /* memory_destroy() -- free a memory_t object allocated by memory_new() */
@@ -98,7 +102,7 @@ uint64_t memory_read(memory_t *mem, uint32_t address, size_t n)
 	/* If requested data does not overlap two 64-bit words, get it */
 	if(right <= 64)
 	{
-		uint64_t word = mem->mem[base];
+		uint64_t word = htobe64(mem->mem[base]);
 		return (word >> (64 - right)) & ((1 << n) - 1);
 	}
 
@@ -107,8 +111,8 @@ uint64_t memory_read(memory_t *mem, uint32_t address, size_t n)
 	{
 		right -= 64;	/* Number of bits from w2 */
 
-		uint64_t w1 = mem->mem[base];
-		uint64_t w2 = mem->mem[base + 1];
+		uint64_t w1 = htobe64(mem->mem[base]);
+		uint64_t w2 = htobe64(mem->mem[base + 1]);
 
 		w1 = w1 & ((1 << (n - right)) - 1);
 		w2 = w2 >> (64 - right);

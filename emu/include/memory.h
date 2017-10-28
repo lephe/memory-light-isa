@@ -13,6 +13,7 @@ typedef struct
 {
 	/* Memory geometry */
 	uint32_t memsize;	/* Total memory size */
+	uint32_t text;		/* Text segment size */
 	uint32_t stack;		/* Bottom stack address */
 	uint32_t vramsize;	/* Video RAM size */
 	uint32_t data;		/* Data segment top */

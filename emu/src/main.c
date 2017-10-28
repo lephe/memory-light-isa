@@ -138,8 +138,8 @@ void help(const char **argv)
 
 void quit(void)
 {
-	cpu_destroy(cpu);
-	memory_destroy(mem);
+	if(cpu) cpu_destroy(cpu);
+	if(mem) memory_destroy(mem);
 }
 
 int main(int argc, char **argv)
@@ -163,10 +163,10 @@ int main(int argc, char **argv)
 	memory_load(mem, opt.filename);
 
 	/* Create a CPU and give it the memory */
-	cpu_t *cpu = cpu_new(mem);
+	cpu = cpu_new(mem);
 
 	/* Start the debugger */
-	debug(cpu);
+	debugger(opt.filename, cpu);
 
 	return 0;
 }
