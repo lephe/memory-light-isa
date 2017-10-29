@@ -7,11 +7,8 @@ from .utils import huffman, Queue, Stack
 from .errors import TokenError, ParserError
 
 
-
-
-
 class Parser(object):
-    def __init__(self, lexer = None):
+    def __init__(self, lexer=None):
         self.lexer = lexer
         self.stack = Stack()
 
@@ -20,9 +17,10 @@ class Parser(object):
 
         return self.run()
 
-    def unstack_until(self, predicate, * , ignore=lambda x: False, want_res=False):
-        """ Take a predicate, and unstack until the predicate. if want_res est vrai, then
-            return all elements whom have been unstacked"""
+    def unstack_until(self, predicate, *, ignore=lambda x: False, want_res=False):
+        
+        """ Take a predicate, and unstack until the predicate. if want_res is
+        True, then return all elements whom have been unstacked"""
 
         if want_res:
 
@@ -77,7 +75,7 @@ class Parser(object):
 
 
     # parseur d'opérateurs
-    def asm_add(self, token):
+    def __asm_add(self, token):
         try :
             x = next(self.tokens_generator)
             y = next(self.tokens_generator)
@@ -110,7 +108,7 @@ class Parser(object):
         else:
             raise ParserError("Invalid token")
 
-    def asm_sub(self, token):
+    def __asm_sub(self, token):
         try :
             x = next(self.tokens_generator)
             y = next(self.tokens_generator)
@@ -143,7 +141,7 @@ class Parser(object):
         else:
             raise ParserError("Invalid token")
 
-    def asm_cmp(self, token):
+    def __asm_cmp(self, token):
         try : 
             x = next(self.tokens_generator)
             y = next(self.tokens_generator)
@@ -164,7 +162,7 @@ class Parser(object):
         else:
             raise ParserError("Invalid token")
 
-    def asm_let(self, token):
+    def __asm_let(self, token):
         try : 
             x = next(self.tokens_generator)
             y = next(self.tokens_generator)
@@ -185,7 +183,7 @@ class Parser(object):
         else:
             raise ParserError("Invalid token")
 
-    def asm_shift(self, token):
+    def __asm_shift(self, token):
         try:
             x = next(self.tokens_generator)
             y = next(self.tokens_generator)
@@ -203,43 +201,43 @@ class Parser(object):
         else:
             raise ParserError("Invalid token")
 
-    def asm_readze(self, token):
+    def __asm_readze(self, token):
         raise NotImplementedError()
 
-    def asm_readse(self, token):
+    def __asm_readse(self, token):
         raise NotImplementedError()
 
-    def asm_jump(self, token):
+    def __asm_jump(self, token):
         raise NotImplementedError()
 
-    def asm_or(self, token):
+    def __asm_or(self, token):
         raise NotImplementedError()
 
-    def asm_and(self, token):
+    def __asm_and(self, token):
         raise NotImplementedError()
 
-    def asm_write(self, token):
+    def __asm_write(self, token):
         raise NotImplementedError()
 
-    def asm_call(self, token):
+    def __asm_call(self, token):
         raise NotImplementedError()
 
-    def asm_setctr(self, token):
+    def __asm_setctr(self, token):
         raise NotImplementedError()
 
-    def asm_getctr(self, token):
+    def __asm_getctr(self, token):
         raise NotImplementedError()
 
-    def asm_push(self, token):
+    def __asm_push(self, token):
         raise NotImplementedError()
 
-    def asm_return(self, token):
+    def __asm_return(self, token):
         raise NotImplementedError()
 
-    def asm_xor(self, token):
+    def __asm_xor(self, token):
         raise NotImplementedError()
 
-    def asm_asr(self, token):
+    def __asm_asr(self, token):
         raise NotImplementedError()
 
 
@@ -258,31 +256,4 @@ statements = '''
 for token in lexer(statements):
     print(token)
 
-
-
-def compile_asm(s, * ,generate_tree=False):
-
-    # tokenize the pre-asm
-    lex = lexer(s)
-
-    # parse to convert in asm
-    par = Parser().parse(lex)
-
-    # duplicate the iterator
-    par1, par2 = itertools.tee(par)
-
-    # Generate and save the huffman-tree of the opcodes
-    c = count_oprations(par1)
-    hufftree = huffman(c)
-
-    with open("opcode.txt", "w+") as f:
-        for opcode, memonic in hufftree:
-            f.write(f"{memonic} {opcode}\n")
-
-    jumpcode = None
-
-
-
-
 compile_asm(statements)
-

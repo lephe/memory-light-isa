@@ -1,7 +1,19 @@
-
+""" Some utilities for the lexer/parser """
 import collections
 import re
 import heapq
+
+
+def inv_dict_list(dictionnary):
+    """ Take a dictionnary[string, lists[string]], and return as
+    dictionnary[string, string] reversed."""
+    inv_d = dict()
+
+    for key1, value in dictionnary.items():
+        for key2 in value:
+            inv_d[key2] = key1
+
+    return inv_d
 
 
 class Queue(collections.deque):
@@ -65,40 +77,41 @@ def huffman(ctr):
     # feuilles des arbres, où les feuilles des arbres sont étiquetés par les
     # clés de c. Heap est un tas-min pour des raisons de performance.
 
-    heap = []
+    forest = []
     for key, freq in ctr.most_common():
 
         # Initialisation : On fabrique une foret de feuilles. On ne garde en
         # mémoire que les feuilles et le chemin (en binaire) pour acceder à la
         # feuille.
 
-        heap.append((freq, [("", key)]))
+        forest.append((freq, [("", key)]))
 
-    if len(heap) == 0:
+    if len(forest) is 0:
         return []
 
-    if len(heap) == 1:
+    if len(forest) is 1:
         # Unique key.
-        return ["0", heap[0][0][1]]
+        return ["0", forest[0][0][1]]
 
-    heapq.heapify(heap)
+    heapq.heapify(forest)
 
-    while len(heap) > 1:
+    while len(forest) > 1:
 
         # Algorithme glouton : on prend les arbres les moins fréquents, et on
         # les mets à coté.
 
-        freq_x, x = heapq.heappop(heap)
-        freq_y, y = heapq.heappop(heap)
+        freq_x, left_tree = heapq.heappop(forest)
+        freq_y, right_tree = heapq.heappop(forest)
 
         freq_z = freq_x + freq_y
-        z = [("0" + pos, key) for pos, key in x] + [("1" + pos, key) for pos, key in y]
+        tree = [("0" + pos, key) for pos, key in left_tree] + \
+               [("1" + pos, key) for pos, key in right_tree]
 
         # Et on repose le résultat dans le tas.
-        heapq.heappush(heap, (freq_z, z))
+        heapq.heappush(forest, (freq_z, tree))
 
-    # len(heap) = 1 ici.
-    _, tree = heap[0]
+    # len(forest) = 1 ici.
+    _, tree = forest[0]
 
     return tree
 
