@@ -19,6 +19,9 @@ commands = {\
     "leti"   : Command(   "0111", ("reg", "const")),
     "shift"  : Command(   "1000", ("dir", "reg", "shiftval")),
     "readze" : Command(  "10010", ("ctr", "size", "reg")),
+
+    "pop"    : Command("1001001", ("size", "reg")),
+
     "readse" : Command(  "10011", ("ctr", "size", "reg")),
     "jump"   : Command(   "1010", ("addr_signed",)),
     "jumpif" : Command(   "1011", ("cond", "addr_signed")),
@@ -27,10 +30,10 @@ commands = {\
     "and2"   : Command( "110010", ("reg", "reg")),
     "and2i"  : Command( "110011", ("reg", "const")),
     "write"  : Command( "110100", ("ctr", "size", "reg")),
-    "call"   : Command( "110101", ("addr_unsigned",)),
+    "call"   : Command( "110101", ("addr_signed",)),
     "setctr" : Command( "110110", ("ctr", "reg")),
     "getctr" : Command( "110111", ("ctr", "reg")),
-    "push"   : Command("1110000", ("reg",)),
+    "push"   : Command("1110000", ("size", "reg",)),
     "return" : Command("1110001", ()),
     "add3"   : Command("1110010", ("reg", "reg", "reg")),
     "add3i"  : Command("1110011", ("reg", "reg", "const")),
@@ -195,7 +198,7 @@ def asm_ctr(s):
 
 re_size = re.compile(r"^(0x[0-9A-Fa-f]+)|([0-9]+)$")
 def asm_size(s):
-    res = re_size.findall()
+    res = re_size.findall(s)
 
     if len(res) != 1:
         raise TokenError("invalid size syntax")
@@ -332,7 +335,7 @@ def asm_line(s):
             linecode.append(asm_addr_unsigned(value))
 
         elif value_type == "cond":
-            linecode.append(asm_addr_cond(value))
+            linecode.append(asm_cond(value))
 
         else:
             raise ValueError("Unknow value type : {}".format(value_type))
@@ -375,8 +378,7 @@ if __name__ == '__main__':
         wf.write(res)
 
 
-    res = res.replace("\n", "")
-    res = res.replace(" ", "")
+    res = "".join(res.split())
     res = res + "0" * ((8-len(res))%8) # Adding zeros at the end
     bin_ = int(res, 2).to_bytes(len(res)//8, byteorder='big') # Converting to byte object
 

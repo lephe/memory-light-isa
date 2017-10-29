@@ -1,3 +1,6 @@
 # Emulator/Debugger build files and binary output
 emu/build/***
 emu/emu
+
+*/__pycache__/*
+*/__pycache__
