@@ -16,7 +16,7 @@ class Lexer(object):
             # Operators
             LexType.OPERATION: 'add|sub|cmp|let|shift|readze|readse|jump|' + \
                                'or|and|write|call|setctr|getctr|push|' +     \
-                               'return|xor|asr',
+                               'return|xor|asr|pop',
 
             # Values
             LexType.REGISTER:   r'(?:r|R)[0-9]+',
@@ -25,12 +25,12 @@ class Lexer(object):
             LexType.COMMENT:    r';.*',
             LexType.CONDITION:  r'eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le',
             LexType.MEMCOUNTER: r'pc|sp|a0|a1',
-            LexType.LABEL:      r'[a-zA-Z][a-zA-Z0-9]*',
+            LexType.LABEL:      r'[a-zA-Z][a-zA-Z0-9]*:',
 
             # Tokenizer stuff
             LexType.NEWLINE:  r'\n',
             LexType.SKIP:     r'[ \t]+',
-            LexType.MISMATCH: r'.',
+            LexType.MISMATCH: r'.+',
             LexType.ENDFILE:  r'$',
         }
 

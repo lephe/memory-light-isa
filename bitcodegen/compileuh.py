@@ -27,7 +27,8 @@ possible_transition = {
     "getctr": ["getctr"],
     "push":   ["push"],
     "return": ["return"],
-    "asr":    ["asr3"]}
+    "asr":    ["asr3"],
+    "pop":    ["pop"]}
 
 
 VT = ValueType
@@ -82,6 +83,7 @@ asr_specs = {
     "setctr":  (VT.MEMCOUNTER, VT.REGISTER),
     "getctr":  (VT.MEMCOUNTER, VT.REGISTER),
     "push":    (VT.SIZE, VT.REGISTER),
+    "pop":     (VT.SIZE, VT.REGISTER),
     "return":  (),
 
     "xor3":    (VT.REGISTER, VT.REGISTER, VT.REGISTER),
@@ -124,5 +126,6 @@ def compile_asm(s, *, generate_tree=False):
         for opcode, memonic in hufftree.items():
             f.write(f"{memonic} {opcode}\n")
 
+    import pprint
     for x in par2:
-        print(x)
+        pprint.pprint(x)

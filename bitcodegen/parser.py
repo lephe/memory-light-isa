@@ -38,8 +38,9 @@ class Parser(object):
             elif token.typ is LexType.NEWLINE:
                 try:
                     self.handle_one()
-                except:
+                except ParserError as e:
                     print(f"line {token}")
+                    print(e.message)
                     raise
 
                 while not self.out_stack.is_empty():
@@ -51,23 +52,32 @@ class Parser(object):
     def unstack_until_operation(self):
         res = Queue()
 
-        while self.stack[-1].typ is not LexType.OPERATION:
-            if self.stack[-1].typ is LexType.NEWLINE:
-                if len(res) is 0:
-                    return None
-                else:
-                    raise ParserError("No operand found in not empty line")
+        while not self.stack.is_empty():
+            if self.stack[-1].typ is not LexType.OPERATION:
 
-            if self.stack.is_empty():
+                if self.stack[-1].typ is LexType.NEWLINE:
+                    if len(res) is 0:
+                        return ()  # Empty tuple
+                    else:
+                        raise ParserError("No operand found in not empty line")
+
+                res.push(self.stack.pop())
+            else:
+                break
+        else:
+            if len(res) is not 0:
                 raise ParserError("The stack is empty : couldn't find operand")
-
-            res.push(self.stack.pop())
+            else:
+                return ()
 
         res.push(self.stack.pop())
         return tuple(res)
 
     def handle_one(self):
         res = self.unstack_until_operation()
+
+        if len(res) is 0:
+            return None
 
         fun_name = res[0].value
         args_types = tuple(map(lambda x: x.typ, res[1:]))
@@ -98,37 +108,37 @@ class Parser(object):
         self.out_stack.push(Line(funcname, typed_args, res[0].line))
 
     def read_memcounter(self, value):
-        return Value(ValueType.MEMCOUNTER, value)
+        return value
 
     def read_direction(self, value):
-        return Value(ValueType.DIRECTION, value)
+        return value
 
     def read_condition(self, value):
-        return Value(ValueType.CONDITION, value)
+        return value
 
     def read_uconstant(self, value):
         assert value in range(0, 2**63)
-        return Value(ValueType.UCONSTANT, value)
+        return value
 
     def read_sconstant(self, value):
         assert value in range(-2**63, 2**63)
-        return Value(ValueType.SCONSTANT, value)
+        return value
 
     def read_aaddress(self, value):
         raise NotImplementedError()
 
     def read_raddress(self, value):
         assert value in range(-2**63, 2**63)
-        return Value(ValueType.RADDRESS, value)
+        return value
 
     def read_shiftval(self, value):
         assert value in range(2**6)
-        return Value(ValueType.SHIFTVAL, value)
+        return value
 
     def read_size(self, value):
         assert value in [1, 4, 8, 32, 64]
-        return Value(ValueType.SIZE, value)
+        return value
 
     def read_register(self, value):
         assert value in range(NB_REG)
-        return Value(ValueType.REGISTER, value)
+        return value
