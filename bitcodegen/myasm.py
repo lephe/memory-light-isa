@@ -83,7 +83,7 @@ def binary_repr(n, k, signed=False):
         n = (2**k + n) % 2**k
 
     unfilled = bin(n)[2:]
-    
+
     if len(unfilled) > k:
         raise TokenError("Too long binary")
 
@@ -101,7 +101,7 @@ def asm_reg(s):
     val = int(res[0]) # No possible error here.
 
     assert 0 <= val < NB_REG
-    
+
     return binary_repr(val, NB_BIT_REG)
 
 re_const = re.compile(r"^([+-]?0x[0-9A-Fa-f]+)|([+-]?[0-9]+)$")
@@ -285,7 +285,7 @@ def asm_addr_unsigned(s):
 re_cond = re.compile(r"(eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le)")
 def asm_cond(s):
     res = re_cond.findall(s)
-    return conditions[res[0]]
+    return conditions[res[0]].opcode
 
 
 
@@ -305,7 +305,7 @@ def asm_line(s):
     linecode = []
     linecode.append(cmd.opcode)
     print(linecode)
- 
+
     assert len(cmd.operands) == len(args)
 
     for value_type, value in zip(cmd.operands, args):
@@ -345,7 +345,7 @@ def asm_line(s):
 
 def asm_doc(s):
     bitcode = []
-    for line_nb, line in enumerate(s.split("\n"), 1): 
+    for line_nb, line in enumerate(s.split("\n"), 1):
         # For each line, enumeration begin at 1.
         try:
             bitcode.append(asm_line(line))
@@ -369,7 +369,7 @@ if __name__ == '__main__':
 
 
     args = parser.parse_args()
-    
+
     with open(args.filename + ".s", "r") as rf:
         res = asm_doc(rf.read())
 
