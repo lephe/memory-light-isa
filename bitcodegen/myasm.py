@@ -333,7 +333,7 @@ re_cond = re.compile(r"(eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le)")
 
 def asm_cond(s):
     res = re_cond.findall(s)
-    return conditions[res[0]]
+    return conditions[res[0]].opcode
 
 
 def asm_remove_comments(s):
