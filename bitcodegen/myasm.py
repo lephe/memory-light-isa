@@ -159,7 +159,7 @@ def asm_sconst(s):
 
     if val in range(2**1):
         # Range in NOT a list in python3
-        return "0" + binary_repr(val, 1, signed=True)
+        return "0" + binary_repr(val, 1)
     elif val in range(-2**7, 2**7):
         return "10" + binary_repr(val, 8, signed=True)
     elif val in range(-2**31, 2**32):
