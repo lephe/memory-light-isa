@@ -1,0 +1,14 @@
+; Initialization (program input)
+    let     r1 874
+    let     r2 65
+
+; Main program (r3 = r1 * r2)
+    let     r3 0
+; nonzero:
+    shift   right r1 1
+    jump    nc 26
+    add     r3 r2
+; next:
+    shift   left r2 1
+    cmp     r1 0
+    jump    nz -53

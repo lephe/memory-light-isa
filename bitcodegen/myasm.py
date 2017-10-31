@@ -354,7 +354,6 @@ def asm_line(s):
 
     linecode = []
     linecode.append(cmd.opcode)
-    print(linecode)
 
     assert len(cmd.operands) == len(args)
 
@@ -402,7 +401,7 @@ def asm_doc(s):
         # For each line, enumeration begin at 1.
         try:
             bitcode.append(asm_line(line))
-        except ValueError, TokenError:
+        except (ValueError, TokenError):
             print("/!\ error at line {}".format(line_nb))
             print(line)
             print()
