@@ -11,13 +11,12 @@ obj	= $(src:src/%=build/%.o)
 
 # _DEFAULT_SOURCE is for endian.h
 cflags	= -Wall -Wextra -std=c11 -I include -D_DEFAULT_SOURCE
-# These may also be required for endian.h on some older platforms
-cflags += -D_BSD_SOURCE -D__USE_BSD
-
 dflags	= -MT $@ -MMD -MP -MF $(@:.o=.d)
 lflags	= $(cflags) -lncurses
 
-# Weird ncurses problem: on some platforms, -ltinfo is required
+# On some platforms where binutils does not automatically link in libtinfo as a
+# dependency to ncurses, it may be required to link it manually.
+# On some others, the libtinfo doesn't exist. Hence this switch.
 ifdef USE_LIBTINFO
 lflags += -ltinfo
 endif

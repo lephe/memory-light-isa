@@ -13,15 +13,18 @@ static int error_flag = 0;
 /* error_msg() -- emit an error */
 void error_msg(error_t level, const char *format, ...)
 {
-	/* Heed for perror() calls */
-	int call_perror = 0, e = errno;
+	/* Heed for strerror() calls. Save errno now because something could
+	   happen inside fprintf() or any other function */
+	int call_strerror = 0;
+	int e = errno;
+
 	if(format[0] == '#')
 	{
 		format++;
-		if(format[0] == ' ') call_perror = 1, format++;
+		if(format[0] == ' ') call_strerror = 1, format++;
 	}
 
-	/* Indicate the type of message */
+	/* Indicate the type of message with a bit of coloring */
 	if(level > 0 && level <= 5)
 	{
 		const char *strs[] = {
@@ -33,14 +36,14 @@ void error_msg(error_t level, const char *format, ...)
 		fprintf(stderr, "\e[%d;1m%s\e[0m", colors[level], strs[level]);
 	}
 
-	/* Print the given message */
+	/* Don't forget to actually print the provided message */
 	va_list args;
 	va_start(args, format);
 	vfprintf(stderr, format, args);
 	va_end(args);
 
-	/* If required, call strerror() for more detail */
-	if(call_perror) fputs(": ", stderr), fputs(strerror(e), stderr);
+	/* If requested, call strerror() for more detail */
+	if(call_strerror) fputs(": ", stderr), fputs(strerror(e), stderr);
 	putchar('\n');
 
 	/* Set the error flag or leave when required */
@@ -48,15 +51,13 @@ void error_msg(error_t level, const char *format, ...)
 	if(level >= error_fatal) exit(1);
 }
 
-/* error_clear() -- clear the error flag
-   The error flag is set every time error or internal errors are emitted. */
+/* error_clear() -- clear the error flag */
 void error_clear(void)
 {
 	error_flag = 0;
 }
 
-/* error_check() -- check the error flag
-   If the error flag is set, exits the program. */
+/* error_check() -- check the error flag */
 void error_check(void)
 {
 	if(error_flag) exit(1);

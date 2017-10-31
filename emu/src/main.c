@@ -14,27 +14,45 @@
 //	Command-line parsing
 //---
 
+/*
+	opt_t structure
+	Describes the command-line parameters passed to the program.
+*/
 typedef struct
 {
+	/* TODO - Think more about how these should work (and compatibility
+	   with the subject's model) */
 	enum {
 		mode_run	= 1,
 		mode_debug	= 2,
 		mode_graphical	= 3,
 	} mode		:8;
-	uint help	:8;
+	uint help	:1;
 
-	uint32_t	memsize;
-	uint32_t	stack;
+	uint64_t	memsize;	/* Dynamic memory size */
+	uint64_t	stack;		/* Dynamic bottom stack address */
 
-	const char *filename;
+	const char *filename;		/* Emulated binary file */
 } opt_t;
 
-/* sizetoi() -- parse nonnull integers with 'k' and 'M' suffixes */
-uint32_t sizetoi(const char *arg)
+/*
+	sizetoi() -- parse non-zero integers with 'k' and 'M' suffixes
+	This function reads the provided strings and tries to parse an integer
+	on the form:
+		[0-9]+[kM]?
+	The string must end after the number, thus '34k, World!' is not a valid
+	number-representing string. This function returns 0 on error, which is
+	definitely not a good error indicator, except if 0 is an invalid value
+	in the context. Make sure to check beforehand.
+
+	@arg	arg	String to parse.
+	@returns	The value from the string in an integer format.
+*/
+static uint64_t sizetoi(const char *arg)
 {
 	if(!isdigit(arg[0])) return 0;
 
-	uint32_t value = 0;
+	uint64_t value = 0;
 	while(isdigit(*arg)) value = value * 10 + (*arg - '0'), arg++;
 
 	if(!arg[0]) return value;
@@ -44,10 +62,16 @@ uint32_t sizetoi(const char *arg)
 	return 0;
 }
 
-/* parse_args() -- parse command-line options, filling an opt_t structure */
-void parse_args(int argc, char **argv, opt_t *opt)
+/*
+	parse_args() -- parse command-line options into an opt_t object
+
+	@arg	argc	Number of command-line arguments
+	@arg	argv	NULL-terminated command-line argument array
+	@arg	opt	Option structure to fill with the argument content
+*/
+static void parse_args(int argc, char **argv, opt_t *opt)
 {
-	/* Initialize structure */
+	/* Clear structure with default values */
 	opt->mode = opt->help = 0;
 	opt->memsize = opt->stack = 0;
 	opt->filename = NULL;
@@ -67,13 +91,14 @@ void parse_args(int argc, char **argv, opt_t *opt)
 		if(!strcmp(arg, "-g") || !strcmp(arg, "-graphical"))
 			newmode = mode_graphical;
 
+		/* Reject mode arguments if finding more than one */
 		if(newmode)
 		{
 			if(opt->mode) error("unexpected mode: '%s'", arg);
 			else opt->mode = newmode;
 		}
 
-		/* Memory-related arguments */
+		/* Arguments related to memory geometry */
 		else if(!strcmp(arg, "--stack-addr"))
 		{
 			arg = argv[++i];
@@ -109,6 +134,8 @@ void parse_args(int argc, char **argv, opt_t *opt)
 	error_check();
 }
 
+
+
 //---
 //	Main program
 //---
@@ -127,21 +154,42 @@ const char *help_string =
 "  --memory-size <size>   Set the total memory size (default 4M)\n"
 "Both constants may use the 'k' or 'M' suffixes (eg. 16k or 2M).\n";
 
-memory_t *mem = NULL;
-cpu_t *cpu = NULL;
+/* Emulated memory and CPU */
+static memory_t *mem	= NULL;
+static cpu_t *cpu	= NULL;
 
+/*
+	help()
+	Prints the help message and exits successfully.
+
+	@arg	argv	Argument array; argv[0] is used for invocation help
+*/
 void help(const char **argv)
 {
 	printf(help_string, argv[0]);
 	exit(0);
 }
 
+/*
+	quit()
+	Exit handler. Destroys what was left behind by the main function.
+*/
 void quit(void)
 {
 	if(cpu) cpu_destroy(cpu);
 	if(mem) memory_destroy(mem);
 }
 
+/*
+	main()
+	In a normal execution flow, parses the command-line arguments, creates
+	a virtual CPU and memory, loads the provided file into memory, then
+	starts the debugger and give it control of the flow.
+
+	@arg	argc	Number of command-line arguments
+	@arg	argv	NULL-terminated command-line argument array
+	@returns	Status code: 0 on success, 1 on error
+*/
 int main(int argc, char **argv)
 {
 	atexit(quit);
@@ -150,6 +198,7 @@ int main(int argc, char **argv)
 	opt_t opt;
 	parse_args(argc, argv, &opt);
 
+	/* Check that a filename was provided */
 	if(argc == 1 || opt.help) help((const char **)argv);
 	if(!opt.filename) fatal("no input file");
 
@@ -165,7 +214,7 @@ int main(int argc, char **argv)
 	/* Create a CPU and give it the memory */
 	cpu = cpu_new(mem);
 
-	/* Start the debugger */
+	/* Start the debugger. It's show time! */
 	debugger(opt.filename, cpu);
 
 	return 0;

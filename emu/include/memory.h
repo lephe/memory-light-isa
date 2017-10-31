@@ -1,3 +1,20 @@
+//---
+//	emu:memory - emulate a random-access bit-addressable memory
+//
+//	This module provides routines for manipulating the bit-addressable
+//	memory used by the fictional CPU. Instead of emulating the four memory
+//	counters (or pointers, as I'd prefer to name them) and the serial
+//	line between CPU and memory, I opted for a simple design with random
+//	access of at most 64 bits at a time.
+//
+//	There are several reasons for this choice, the main ones being
+//	flexibility and performance. The debugger needs to disassemble code
+//	independently of the emulated processor's PC, and keeping and updating
+//	copies of the counter in the memory object would only make this a lot
+//	more difficult. Reading only a single bit at a time is also a clear
+//	performance bottleneck (not the only one, though).
+//---
+
 #ifndef	MEMORY_H
 #define	MEMORY_H
 
@@ -9,39 +26,84 @@
 #define	MEMORY_DEFAULT_STACK	(2 << 20)
 #define	MEMORY_DEFAULT_VRAMSIZE	(1 << 20)
 
+/*
+	memory_t structure
+	This structure describes the geometry of the memory, which can be
+	dynamically changed by the user to make sure the program fits in the
+	provided address space.
+
+	The emulated looks like this :
+	     0000: Program          ^
+	           Stack            |  memsize
+	    stack: Video memory     |
+	     data: Data segment     v
+
+	The stack grows down in the address space, which is why the stack
+	attribute actually represents the beginning address of the video
+	memory.
+*/
 typedef struct
 {
-	/* Memory geometry */
-	uint32_t memsize;	/* Total memory size */
-	uint32_t text;		/* Text segment size */
-	uint32_t stack;		/* Bottom stack address */
-	uint32_t vramsize;	/* Video RAM size */
-	uint32_t data;		/* Data segment top */
+	uint64_t memsize;	/* Total memory size */
+	uint64_t text;		/* Text segment size */
+	uint64_t stack;		/* Bottom stack address */
+	uint64_t vramsize;	/* Size of the video memory segment */
+	uint64_t data;		/* Top address of the data segment */
 
+	/* Pointer to actual chunk of data, of size memsize */
 	uint64_t *mem;
 
 } memory_t;
 
-/* memory_new() -- allocate a virtual memory */
-memory_t *memory_new(uint32_t memsize, uint32_t stack, uint32_t vramsize);
+//---
+//	Memory object management
+//---
 
-/* memory_load() -- load a program into memory */
+/*
+	memory_new() -- allocate a virtual memory
+	This function checks that the memory layout provided through the
+	parameters is consistent with the memory model, and creates a new
+	memory object with freshly allocated data.
+
+	Some parameters may not be provided (when 0 is passed), in this case
+	the default values are used (see the macros above).
+
+	@arg	memsize		Requested total memory size
+	@arg	stack		Request bottom stack address
+	@arg	vramsize	Request video memory size
+	@returns		A new memory object. Calls exit(1) on error.
+*/
+memory_t *memory_new(uint64_t memsize, uint64_t stack, uint64_t vramsize);
+
+/*
+	memory_load() -- load a program into memory
+	Loads the file named 'filename' into the given memory. The file may not
+	fit into the code/stack segment, in which case this function fails and
+	calls exit(1). This function may also fail is an error is encountered
+	while trying to load the file. If everything succeeds, it sets the
+	'text' attribute of the mem object to the size of the file (in bits).
+
+	@arg	mem		Memory to load the file into
+	@arg	filename	File to load
+*/
 void memory_load(memory_t *mem, const char *filename);
 
-/* memory_destroy() -- free a memory_t object allocated by memory_new() */
+/*
+	memory_destroy() -- free a memory_t object allocated by memory_new()
+
+	@arg	mem	Memory object to destroy
+*/
 void memory_destroy(memory_t *mem);
+
+
 
 //---
 //	Data access
 //---
 
 /* memory_read() -- read n bits from an address (up to 64) */
-uint64_t memory_read(memory_t *mem, uint32_t address, size_t n);
+uint64_t memory_read(memory_t *mem, uint64_t address, size_t n);
 
-/*** TODO
-int  Memory::read_bit(int ctr);
-void Memory::write_bit(int ctr, int bit);
-void Memory::set_counter(int ctr, uword val);
-****/
+/* TODO - emu:memory - add a function to write data to memory */
 
 #endif	/* MEMORY_H */

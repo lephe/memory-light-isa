@@ -4,16 +4,25 @@
 #define	r4(n)	n, n, n, n
 #define	r8(n)	r4(n), r4(n)
 
+/* Associate a unique instruction id to all sequences of 7 bits. This table
+   avoids having to read 4 bits, test if it's a valid instruction (Huffman
+   encoding), if not, read another bit, test again... until 7 bits. */
 static const uint8_t ids[128] = {
 	r8(0), r8(1), r8(2),  r8(3),  r8(4),  r8(5),  r8(6),  r8(7),
 	r8(8), r4(9), r4(10), r8(11), r8(12),
 	13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20,
 	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
 };
+/* Indicate the length of each unique instruction id. */
 static const uint8_t length[37] = {
 	r8(4), 4, 5, 5, 4, 4, r8(6), r8(7), r8(7)
 };
 
+/* Instruction set. The entry at each unique id represents the associated
+   instruction, with a predefined format. The first three letters are elements
+   of the arg_t enumeration and represent the instruction's arguments. The
+   fifth letter is an element of the ctgy_t enumeration and classifies the
+   instruction. The mnemonic is read starting at index 6. */
 static const char instructions[37][16] = {
 	"rr- A add2",	"rl- A add2i",	"rr- A sub2",	"rl- A sub2i",
 	"rr- T cmp",	"rc- T cmpi",	"rr- L let",	"rc- L leti",
@@ -27,15 +36,27 @@ static const char instructions[37][16] = {
 	"--- C (res)",
 };
 
-static inline int64_t sign_extend(uint64_t x, uint size)
+/*
+	sign_extend()
+	Performs sign extension of the value x, which is stored in a signed
+	n-bit format, into 64-bit signed format. For more info, see the mighty
+	Bit Twiddling Hacks reference:
+	http://graphics.stanford.edu/~seander/bithacks.html#VariableSignExtend
+
+	@arg	x	Value to sign-extend
+	@arg	n	Number of bits on which x is represented
+	@return		x in signed 64-bit format
+*/
+static inline int64_t sign_extend(uint64_t x, uint n)
 {
-	uint64_t m = 1u << (size - 1);
+	uint64_t m = 1ul << (n - 1);
 	return (x ^ m) - m;
 }
 
-uint disasm_opcode(memory_t *mem, uint32_t *ptr, const char **format)
+/* disasm_opcode() -- read an instruction code */
+uint disasm_opcode(memory_t *mem, uint64_t *ptr, const char **format)
 {
-	uint32_t opcode = memory_read(mem, *ptr, 7) & 0x7f;
+	uint opcode = memory_read(mem, *ptr, 7) & 0x7f;
 	uint id = ids[opcode & 0x7f];
 
 	*ptr += length[id];
@@ -44,31 +65,37 @@ uint disasm_opcode(memory_t *mem, uint32_t *ptr, const char **format)
 	return id;
 }
 
-uint disasm_reg(memory_t *mem, uint32_t *ptr)
+/* disasm_reg() -- read a register number */
+uint disasm_reg(memory_t *mem, uint64_t *ptr)
 {
 	*ptr += 3;
 	return memory_read(mem, *ptr - 3, 3);
 }
 
-uint disasm_dir(memory_t *mem, uint32_t *ptr)
+/* disasm_dir() -- read a shift direction bit */
+uint disasm_dir(memory_t *mem, uint64_t *ptr)
 {
 	*ptr += 1;
 	return memory_read(mem, *ptr - 1, 1);
 }
 
-uint disasm_cond(memory_t *mem, uint32_t *ptr)
+/* disasm_cond() -- read a jump condition type */
+uint disasm_cond(memory_t *mem, uint64_t *ptr)
 {
 	*ptr += 3;
 	return memory_read(mem, *ptr - 3, 3);
 }
 
-int64_t disasm_addr(memory_t *mem, uint32_t *ptr, uint *size_arg)
+/* disasm_addr() -- read a relative address */
+int64_t disasm_addr(memory_t *mem, uint64_t *ptr, uint *size_arg)
 {
 	/* Length of header, size of address, 3 header bits of address */
 	uint offset = 1, size = 8;
 	uint head = memory_read(mem, *ptr, 3);
 
+	/* Headers of size 2 start with 10, which allows 100 and 101 */
 	if(head == 4 || head == 5) offset = 2, size = 16;
+	/* Headers of size 3 only include 110 and 111 */
 	else if(head >= 6) offset = 3, size = 1 << (head - 1);
 
 	*ptr += offset + size;
@@ -78,14 +105,16 @@ int64_t disasm_addr(memory_t *mem, uint32_t *ptr, uint *size_arg)
 	return sign_extend(addr, size);
 }
 
-#include <stdio.h>
-uint64_t disasm_lconst(memory_t *mem, uint32_t *ptr, uint *size_arg)
+/* disasm_lconst() -- read a zero-extended constant */
+uint64_t disasm_lconst(memory_t *mem, uint64_t *ptr, uint *size_arg)
 {
 	/* Length of header, size of constant, 3 header bits of constant */
 	uint offset = 1, size = 1;
 	uint head = memory_read(mem, *ptr, 3);
 
+	/* Headers of size 2 start with 10, which allows 100 and 101 */
 	if(head == 4 || head == 5) offset = 2, size = 8;
+	/* Headers of size 3 only include 110 and 111 */
 	else if(head >= 6) offset = 3, size = 1 << (head - 1);
 
 	*ptr += offset + size;
@@ -95,32 +124,45 @@ uint64_t disasm_lconst(memory_t *mem, uint32_t *ptr, uint *size_arg)
 	return t;
 }
 
-int64_t disasm_aconst(memory_t *mem, uint32_t *ptr, uint *size_arg)
+/* disasm_aconst() -- read a sign-extended constant */
+int64_t disasm_aconst(memory_t *mem, uint64_t *ptr, uint *size_arg)
 {
 	uint size;
+
+	/* Let disasm_lconst() do the bit retrieval job for us */
 	uint64_t cst = disasm_lconst(mem, ptr, &size);
 	if(size_arg) *size_arg = size;
+
 	return sign_extend(cst, size);
 }
 
-uint disasm_shift(memory_t *mem, uint32_t *ptr)
+/* disasm_shift() -- read a shift constant */
+uint disasm_shift(memory_t *mem, uint64_t *ptr)
 {
 	uint shift = memory_read(mem, *ptr, 7);
+
+	/* If the first bit is set, then the value was just 1 */
 	if(shift & 0x40) shift = 1, (*ptr)++;
+	/* Otherwise, we have 6 bits which represent the shift value */
 	else *ptr += 7;
+
 	return shift;
 }
 
-uint disasm_size(memory_t *mem, uint32_t *ptr)
+/* disasm_size() -- read a memory operation size */
+uint disasm_size(memory_t *mem, uint64_t *ptr)
 {
 	uint size = memory_read(mem, *ptr, 3);
-	*ptr += 2 + (size >= 4);
+	/* Values lower than 4 mean 00x or 01x, thus sizes of length 2 */
+	*ptr += 3 - (size < 4);
 
-	if(size <= 3) return 1 + 3 * (size >> 1);
+	/* Cheap formulas to get the size "efficiently" */
+	if(size < 4) return 1 + 3 * (size >> 1);
 	return 1 << (size - 1);
 }
 
-uint disasm_pointer(memory_t *mem, uint32_t *ptr)
+/* disasm_pointer() -- read a pointer id */
+uint disasm_pointer(memory_t *mem, uint64_t *ptr)
 {
 	*ptr += 2;
 	return memory_read(mem, *ptr - 2, 2);

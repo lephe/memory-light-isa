@@ -50,6 +50,7 @@ typedef enum
 } ctgy_t;
 
 
+
 //---
 //	Disassembler functions
 //
@@ -63,7 +64,7 @@ typedef enum
 //----
 
 /*
-	disasm_opcode()
+	disasm_opcode() -- read an instruction code
 	Reads an opcode from the memory and advances the given pointer. Returns
 	the opcode id and sets the instruction format if non-NULL. The
 	instruction format is a string on the form
@@ -74,25 +75,25 @@ typedef enum
 	@arg	format	Pointer to format string, set if non-NULL
 	@returns	The identifier of the first opcode available at *ptr
 */
-uint disasm_opcode(memory_t *mem, uint32_t *ptr, const char **format);
+uint disasm_opcode(memory_t *mem, uint64_t *ptr, const char **format);
 
 /*
 	disasm_reg() -- read a register number
 	@returns	Register number on 3 bits
 */
-uint disasm_reg(memory_t *mem, uint32_t *ptr);
+uint disasm_reg(memory_t *mem, uint64_t *ptr);
 
 /*
 	disasm_dir() -- read a shift direction bit
 	@returns	Direction bit: 0 for left, 1 for right
 */
-uint disasm_dir(memory_t *mem, uint32_t *ptr);
+uint disasm_dir(memory_t *mem, uint64_t *ptr);
 
 /*
 	disasm_cond() -- read a jump condition type
 	@returns	Condition kind on 3 bits (eq neq sgt slt gt ge lt le)
 */
-uint disasm_cond(memory_t *mem, uint32_t *ptr);
+uint disasm_cond(memory_t *mem, uint64_t *ptr);
 
 /*
 	disasm_addr() -- read a relative address
@@ -102,7 +103,7 @@ uint disasm_cond(memory_t *mem, uint32_t *ptr);
 	@arg	size	Optional pointer to address size, set if non-NULL
 	@returns	Relative address
 */
-int64_t disasm_addr(memory_t *mem, uint32_t *ptr, uint *size);
+int64_t disasm_addr(memory_t *mem, uint64_t *ptr, uint *size);
 
 /*
 	disasm_lconst() -- read a zero-extended constant
@@ -114,25 +115,25 @@ int64_t disasm_addr(memory_t *mem, uint32_t *ptr, uint *size);
 	@arg	size	Optional pointer to constant size, set if non-NULL
 	@returns	Constant read and extended
 */
-uint64_t disasm_lconst(memory_t *mem, uint32_t *ptr, uint *size);
- int64_t disasm_aconst(memory_t *mem, uint32_t *ptr, uint *size);
+uint64_t disasm_lconst(memory_t *mem, uint64_t *ptr, uint *size);
+ int64_t disasm_aconst(memory_t *mem, uint64_t *ptr, uint *size);
 
 /*
 	disasm_shift() -- read a shift constant
-	@returns	Unsigned hift constant on 6 bits
+	@returns	Unsigned shift constant on 6 bits
  */
-uint disasm_shift(memory_t *mem, uint32_t *ptr);
+uint disasm_shift(memory_t *mem, uint64_t *ptr);
 
 /*
 	disasm_size() -- read a memory operation size
 	@returns	Operation size: one of 1, 4, 8, 16, 32 and 64
 */
-uint disasm_size(memory_t *mem, uint32_t *ptr);
+uint disasm_size(memory_t *mem, uint64_t *ptr);
 
 /*
 	disasm_pointer() -- read a pointer id
 	@returns	Pointer id on two bits: in order, PC, SP, A0, A1
 */
-uint disasm_pointer(memory_t *mem, uint32_t *ptr);
+uint disasm_pointer(memory_t *mem, uint64_t *ptr);
 
 #endif	/* DISASM_H */

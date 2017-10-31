@@ -27,8 +27,8 @@ runtime using the following command-line arguments:
   --memory-size  <size>
 ```
 
-Both `<addr>` and `<size>` may be expressed in bits (eg. 256), in kibibits (eg. 8k)
-or in mibibits (eg. 2M).
+Both `<addr>` and `<size>` may be expressed in bits (eg. 256), in kibibits
+(eg. 8k), or in mibibits (eg. 2M).
 
 The video memory holds 16 bits of information for each of the 256 * 256 pixels
 of the screen, thus its size is fixed to 1M. The default configuration for the

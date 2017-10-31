@@ -1,3 +1,10 @@
+//---
+//	emu:debugger:console - manage the console interface with the user
+//
+//	This module is an interface-oriented component of the debugger. It
+//	manages the command-line window both for command input and data output.
+//---
+
 #define	_DEBUGGER_SOURCE
 #include <stdlib.h>
 #include <string.h>
@@ -5,7 +12,7 @@
 #include <debugger.h>
 #include <stdarg.h>
 
-/* dbglog() -- print messages in the console */
+/* dbglog() -- print messages to the console */
 void dbglog(const char *format, ...)
 {
 	va_list args;
@@ -13,6 +20,12 @@ void dbglog(const char *format, ...)
 	va_start(args, format);
 	vw_printw(wcli, format, args);
 	va_end(args);
+}
+
+/* dbgnlog() -- print partial messages to the console */
+void dbgnlog(const char *str, size_t n)
+{
+	waddnstr(wcli, str, n);
 }
 
 /* dbgerr() -- print error messages */
@@ -30,15 +43,18 @@ void dbgerr(const char *format, ...)
 }
 
 /* debugger_prompt() -- get a command, returning a static buffer */
-char *debugger_prompt(void)
+char *debugger_prompt(char ***args_ptr)
 {
-	static char cmd[80];
+	static char cmd[80];	/* Array that holds the command string */
+	static char *args[41];	/* Array for the arguments - no more than 41 */
 
-	/* TODO - Display a proper prompt */
+	/* TODO - Display a proper prompt which can change state */
 	wattron(wcli, COLOR_PAIR(color_idle));
 	dbglog("idle %% ");
 	wattroff(wcli, COLOR_PAIR(color_idle));
 
+	/* Get the command, and provide the args array if requested */
 	wgetnstr(wcli, cmd, 80);
+	if(args_ptr) *args_ptr = args;
 	return cmd;
 }
