@@ -50,7 +50,9 @@ class MemonicBackEnd(BackEnd):
 
         funcname = funcname + " "*(7-len(funcname))
 
-        realise_line = [funcname] + [("r" if x.typ is ValueType.REGISTER else "") + str(x.raw_value) for x in typed_args]
+        realise_line = [funcname] + [("r" if x.typ is ValueType.REGISTER
+                                      else "") + str(x.raw_value)
+                                     for x in typed_args]
 
         self.out_queue.push(" ".join(realise_line))
 

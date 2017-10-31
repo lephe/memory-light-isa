@@ -68,6 +68,7 @@ conditions = {
 class TokenError(ValueError):
     pass
 
+
 NB_REG = 8
 NB_BIT_REG = math.ceil(math.log(NB_REG, 2))
 # Longueur en base 2 de NB_REG.
@@ -105,6 +106,7 @@ def asm_reg(s):
     assert 0 <= val < NB_REG
 
     return binary_repr(val, NB_BIT_REG)
+
 
 re_const = re.compile(r"^([+-]?0x[0-9A-Fa-f]+)|([+-]?[0-9]+)$")
 
@@ -328,6 +330,7 @@ def asm_addr_unsigned(s):
     else:
         raise TokenError("invalid unsigned address : not in range")
 
+
 re_cond = re.compile(r"(eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le)")
 
 
@@ -399,7 +402,7 @@ def asm_doc(s):
         # For each line, enumeration begin at 1.
         try:
             bitcode.append(asm_line(line))
-        except:
+        except ValueError, TokenError:
             print("/!\ error at line {}".format(line_nb))
             print(line)
             print()

@@ -56,22 +56,27 @@ def sub(chaine, dico):
     """ Replace all occurences in a string
 
     :param s (string): string to be parsed
-    :param d (dict[string, string]): mapping dict, all keys will be remplaced by it's value.
+    :param d (dict[string, string]): mapping dict, all keys will be remplaced
+                                     by it's value.
     :return: s with all instances remplaced with thoses of string
     :complexity:
-        :math:`O(k n)` for k the length of dict, and n the length of the string"""
+        :math:`O(k n)` for k the length of dict, and n the length of the
+                       string"""
 
     pattern = re.compile('(' + '|'.join(dico.keys()) + ')')
 
     return pattern.sub(lambda x: dico[x.group()], chaine)
 
+
 def huffman(ctr):
     """ Generate an huffman tree
 
     :param c (collections.Counter): Counter with all the elements
-    :returns: list of couples. First element is the code, second is the element it is bound to.
+    :returns: list of couples. First element is the code, second is the
+              element it is bound to.
     :complexity:
-        :math:`O(n \\log n)` worst case, for n the number of differents elements.
+        :math:`O(n \\log n)` worst case, for n the number of differents
+                             elements.
     """
 
     # Heap est une foret d'arbres étiquetées par la somme des frequences des
@@ -115,6 +120,7 @@ def huffman(ctr):
     _, tree = forest[0]
 
     return tree
+
 
 if __name__ == '__main__':
     pass
