@@ -45,6 +45,7 @@ def add_global_enum(enum):
     for name, member in enum.__members__.items():
         globals()[name] = member
 
+
 def del_global_enum(enum):
     """ Remove all enum's value globals"""
     for name, _ in enum.__members__.items():

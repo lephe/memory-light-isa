@@ -149,7 +149,7 @@ def count_operations(c, it):
     return c
 
 
-def compile_asm(s, *, generate_tree=False):
+def compile_asm(s, *, back_end=MemonicBackEnd, generate_tree=False):
 
     # tokenize the pre-asm
     lexer = Lexer()
@@ -176,7 +176,8 @@ def compile_asm(s, *, generate_tree=False):
                 f.write(f"{memonic} {opcode}\n")
     else:
         par = parser.run()
+        hufftree = default_opcode
 
-    out = MemonicBackEnd(par)
+    out = back_end(hufftree, par)
 
-    out.to_output()
+    return out

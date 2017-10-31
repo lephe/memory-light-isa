@@ -1,10 +1,8 @@
 import collections
 
 from .util import Stack, Queue, inv_dict_list
-from .enums import LexType, ValueType, Value, Line
+from .enums import LexType, ValueType, Value, Line, NB_REG
 from .errors import ParserError
-
-NB_REG = 8
 
 
 class Parser(object):

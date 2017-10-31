@@ -1,9 +1,13 @@
 import enum
 import collections
+import math
 
 Token = collections.namedtuple('Token', ['typ', 'value', 'line', 'column'])
 Value = collections.namedtuple("Value", ("typ", "raw_value"))
 Line = collections.namedtuple("Line", ("funcname", "typed_args", "linenumber"))
+
+NB_REG = 8
+NB_BIT_REG = 3
 
 
 class LexType(enum.Enum):
