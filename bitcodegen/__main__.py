@@ -3,21 +3,11 @@ import argparse
 from .compileuh import compile_asm
 
 if __name__ == "__main__":
-    s = """let r4 2
-    add r1 r2
-    add r1 r2
-    push 64 r4
-    sub r3 5
-    getctr sp r0
-    cmp r3 r5
-    shift left r5 3
-    push 0x40 r0
-    pop 0x20 r0
-    and r2 3
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename')
+    args = parser.parse_args()
+    with open(args.filename) as file:
+        s = file.read()
 
-    add r2 r3 5
-
-    """
-
-    compile_asm(s)
+        compile_asm(s)

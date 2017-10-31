@@ -39,9 +39,9 @@ class Parser(object):
                 try:
                     self.handle_one()
                 except ParserError as e:
-                    print(f"line {token}")
-                    print(e.message)
-                    raise
+                    print(f"/!\ Error on line {token.line}:")
+                    print(f"/!\       {e}")
+                    return None
 
                 while not self.out_stack.is_empty():
                     yield self.out_stack.pop()
@@ -102,7 +102,14 @@ class Parser(object):
 
             method = getattr(self, method_name)
 
-            typed_args.append(Value(goal_type, method(value)))
+            try:
+                typed_value = Value(goal_type, method(value))
+            except AssertionError as e:
+                raise ParserError(
+                    f"couldn't read {goal_type.name} : The value is not in the \
+right range")
+
+            typed_args.append(typed_value)
 
         typed_args = tuple(typed_args)
         self.out_stack.push(Line(funcname, typed_args, res[0].line))
@@ -117,7 +124,7 @@ class Parser(object):
         return value
 
     def read_uconstant(self, value):
-        assert value in range(0, 2**63)
+        assert value in range(0, 2**64)
         return value
 
     def read_sconstant(self, value):
@@ -136,7 +143,7 @@ class Parser(object):
         return value
 
     def read_size(self, value):
-        assert value in [1, 4, 8, 32, 64]
+        assert value in [1, 4, 8, 16, 32, 64]
         return value
 
     def read_register(self, value):

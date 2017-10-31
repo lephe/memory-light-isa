@@ -5,6 +5,7 @@ from .enums import ValueType, LexType
 from .lexer import Lexer
 from .parser import Parser
 from .util import huffman
+from .back_end import MemonicBackEnd
 
 
 # Language specification
@@ -79,7 +80,7 @@ asr_specs = {
     "and3i":   (VT.REGISTER, VT.REGISTER, VT.SCONSTANT),
 
     "write":   (VT.MEMCOUNTER, VT.SIZE, VT.REGISTER),
-    "call":    (VT.AADDRESS,),
+    "call":    (VT.RADDRESS,),
     "setctr":  (VT.MEMCOUNTER, VT.REGISTER),
     "getctr":  (VT.MEMCOUNTER, VT.REGISTER),
     "push":    (VT.SIZE, VT.REGISTER),
@@ -98,8 +99,50 @@ asr_specs = {
 del VT
 
 
-def count_operations(it):
-    c = collections.Counter()
+default_opcode = {
+    "add2":    "0000",
+    "add2i":   "0001",
+    "sub2":    "0010",
+    "sub2i":   "0011",
+    "cmp":     "0100",
+    "cmpi":    "0101",
+    "let":     "0110",
+    "leti":    "0111",
+    "shift":   "1000",
+    "readze":  "10010",
+
+    "pop":     "1001001",
+
+    "readse":  "10011",
+    "jump":    "1010",
+    "jumpif":  "1011",
+    "or2":     "110000",
+    "or2i":    "110001",
+    "and2":    "110010",
+    "and2i":   "110011",
+    "write":   "110100",
+    "call":    "110101",
+    "setctr":  "110110",
+    "getctr":  "110111",
+    "push":    "1110000",
+    "return":  "1110001",
+    "add3":    "1110010",
+    "add3i":   "1110011",
+    "sub3":    "1110100",
+    "sub3i":   "1110101",
+    "and3":    "1110110",
+    "and3i":   "1110111",
+    "or3":     "1111000",
+    "or3i":    "1111001",
+    "xor3":    "1111010",
+    "xor3i":   "1111011",
+    "asr3":    "1111100",
+    "reserved1":   "1111101",
+    "reserved2":   "1111110",
+    "reserved3":   "1111111"}
+
+
+def count_operations(c, it):
     for line in it:
         c.update([line.funcname])
 
@@ -115,17 +158,25 @@ def compile_asm(s, *, generate_tree=False):
     # parse to convert in asm
     parser = Parser(gen_lex, possible_transition, asr_specs, type_specs)
 
-    # duplicate the iterator
-    par1, par2 = itertools.tee(parser.run())
+    if generate_tree:
+        # duplicate the iterator
+        par1, par = itertools.tee(parser.run())
 
-    # Generate and save the huffman-tree of the opcodes
-    c = count_operations(par1)
-    hufftree = {b: a for a, b in huffman(c)}
+        # Generate and save the huffman-tree of the opcodes
+        c = collections.Counter()
+        for key in asr_specs.keys():
+            if key[:-1] != "reserved":
+                c[key] = 0
 
-    with open("opcode.txt", "w+") as f:
-        for opcode, memonic in hufftree.items():
-            f.write(f"{memonic} {opcode}\n")
+        count_operations(c, par1)
+        hufftree = {b: a for a, b in huffman(c)}
 
-    import pprint
-    for x in par2:
-        pprint.pprint(x)
+        with open("opcode.txt", "w+") as f:
+            for opcode, memonic in hufftree.items():
+                f.write(f"{memonic} {opcode}\n")
+    else:
+        par = parser.run()
+
+    out = MemonicBackEnd(par)
+
+    out.to_output()
