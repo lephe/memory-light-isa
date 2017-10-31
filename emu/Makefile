@@ -9,9 +9,18 @@ target	= emu
 src	= $(wildcard src/*.c)
 obj	= $(src:src/%=build/%.o)
 
-cflags	= -Wall -Wextra -std=c11 -I include
+# _DEFAULT_SOURCE is for endian.h
+cflags	= -Wall -Wextra -std=c11 -I include -D_DEFAULT_SOURCE
+# These may also be required for endian.h on some older platforms
+cflags += -D_BSD_SOURCE -D__USE_BSD
+
 dflags	= -MT $@ -MMD -MP -MF $(@:.o=.d)
-lflags	= $(cflags) -lncursesw
+lflags	= $(cflags) -lncurses
+
+# Weird ncurses problem: on some platforms, -ltinfo is required
+ifdef USE_LIBTINFO
+lflags += -ltinfo
+endif
 
 $(target): $(obj)
 	gcc $^ -o $@ $(lflags)

@@ -73,6 +73,10 @@ void memory_load(memory_t *mem, const char *filename)
 	if(blocks < 1) error("# cannot read from '%s'", filename);
 	error_check();
 
+	/* This is not the actual size, padding may exist. It is not possible
+	   to determine from here whether there is padding or not because of
+	   the variable-length design of the binary code, so we leave this
+	   trouble to the cpu and debugger modules */
 	mem->text = 8 * size;
 }
 
@@ -91,10 +95,12 @@ uint64_t memory_read(memory_t *mem, uint32_t address, size_t n)
 {
 	if(!mem) ifatal("memory_read(): NULL memory");
 
+	if(n > 64) fatal("memory_read(): Too much data requested (%u > 64)",n);
+
 	/* TODO - Use an event queue (or sth like that) to set up a properly-
 	   managed exception system for the debugger */
 	if(address + n > mem->memsize) fatal("memory_read(): Out of bounds "
-		"(%x/%d > %x)", address, n, mem->memsize);
+		"(%x/%u > %x)", address, n, mem->memsize);
 
 	uint32_t base = address >> 6;
 	int right = (address & 63) + n;
@@ -103,7 +109,7 @@ uint64_t memory_read(memory_t *mem, uint32_t address, size_t n)
 	if(right <= 64)
 	{
 		uint64_t word = htobe64(mem->mem[base]);
-		return (word >> (64 - right)) & ((1 << n) - 1);
+		return (word >> (64 - right)) & (((uint64_t)1 << n) - 1);
 	}
 
 	/* Otherwise, proceed in two steps */
@@ -114,7 +120,7 @@ uint64_t memory_read(memory_t *mem, uint32_t address, size_t n)
 		uint64_t w1 = htobe64(mem->mem[base]);
 		uint64_t w2 = htobe64(mem->mem[base + 1]);
 
-		w1 = w1 & ((1 << (n - right)) - 1);
+		w1 = w1 & (((uint64_t)1 << (n - right)) - 1);
 		w2 = w2 >> (64 - right);
 
 		return (w1 << right) | w2;

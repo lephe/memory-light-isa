@@ -20,7 +20,7 @@ static const char instructions[37][16] = {
 	"drh A shift",	"psr M readze",	"psr M readse",	"a-- J jump",
 	"oa- J jumpif",	"rr- A or2",	"rl- A or2i",	"rr- A and2",
 	"rl- A and2i",	"psr M write",	"a-- J call",	"pr- C setctr",
-	"pr- C getctr",	"r-- M push",	"--- J return",	"rrr A add3",
+	"pr- C getctr",	"sr- M push",	"--- J return",	"rrr A add3",
 	"rrl A add3i",	"rrr A sub3",	"rrl A sub3i",	"rrr A and3",
 	"rrl A and3i",	"rrr A or3",	"rrl A or3i",	"rrr A xor3",
 	"rrl A xor3i",	"rrh A asr3",	"--- C (res)",	"--- C (res)",
@@ -69,7 +69,7 @@ int64_t disasm_addr(memory_t *mem, uint32_t *ptr, uint *size_arg)
 	uint head = memory_read(mem, *ptr, 3);
 
 	if(head == 4 || head == 5) offset = 2, size = 16;
-	else offset = 3, size = 1 << (head - 1);
+	else if(head >= 6) offset = 3, size = 1 << (head - 1);
 
 	*ptr += offset + size;
 	if(size_arg) *size_arg = size;
@@ -78,6 +78,7 @@ int64_t disasm_addr(memory_t *mem, uint32_t *ptr, uint *size_arg)
 	return sign_extend(addr, size);
 }
 
+#include <stdio.h>
 uint64_t disasm_lconst(memory_t *mem, uint32_t *ptr, uint *size_arg)
 {
 	/* Length of header, size of constant, 3 header bits of constant */
@@ -85,11 +86,13 @@ uint64_t disasm_lconst(memory_t *mem, uint32_t *ptr, uint *size_arg)
 	uint head = memory_read(mem, *ptr, 3);
 
 	if(head == 4 || head == 5) offset = 2, size = 8;
-	else offset = 3, size = 1 << (head - 1);
+	else if(head >= 6) offset = 3, size = 1 << (head - 1);
 
 	*ptr += offset + size;
 	if(size_arg) *size_arg = size;
-	return memory_read(mem, *ptr - size, size);
+
+	uint64_t t = memory_read(mem, *ptr - size, size);
+	return t;
 }
 
 int64_t disasm_aconst(memory_t *mem, uint32_t *ptr, uint *size_arg)

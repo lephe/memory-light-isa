@@ -74,3 +74,31 @@ De toute façon, elles ne sont pas définies dans pdf, mais il y a une fonction
 dans le code python du prof. Bizarre. A voir avec le prof.
 
 
+## Emulator (`/emu`)
+
+To build the emulator, just run `make` in the `/emu` directory. If you ever get
+an `undefined reference to symbol 'acs_map'` error, please turn the following
+switch when making:
+
+```
+  $ make USE_LIBTINFO=1
+```
+
+It happens to be an ncurses/binutils misunderstanding and some library isn't
+getting passed to `ld`, so we need to provide it manually. This option is
+required on some platforms and causes errors on others, so it's not enabled by
+default.
+
+The emulator runs a ncurses interface. The minimal usable terminal geometry is
+96 * 32. The recommended geometry is anything beyond 128 * 40; on smaller
+terminals some information (such as instruction addresses) are hidden so that
+everything fits on the screen.
+
+If the interface renders garbled in your terminal, it may be a configuration
+issue. Check your `$TERM` variable and set it to a value supported by your
+ncurses installation before running the program, for instance:
+
+```
+  $ TERM=xterm-color ./emu ../prog/multi.bin
+```
+
