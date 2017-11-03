@@ -1,8 +1,15 @@
+#!/bin/python3
+
 import argparse
 
-from .compileuh import compile_asm
-from .back_end import MemonicBackEnd, CleartextBitcodeBackEnd
-from .back_end import BinaryBitcodeBackEnd
+from compiler.compileuh import compile_asm
+from compiler.back_end import MemonicBackEnd, CleartextBitcodeBackEnd
+from compiler.back_end import BinaryBitcodeBackEnd
+
+import sys
+
+sys.argv[0] = "compileme"
+
 
 if __name__ == "__main__":
 
