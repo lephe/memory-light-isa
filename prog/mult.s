@@ -1,14 +1,19 @@
 ; Initialization (program input)
-	leti	r1 874
-	leti	r2 65
+	leti	r0 874
+	leti	r1 65
 
-; Main program (r3 = r1 * r2)
-	leti	r3 0
+; Main program (r2 = r0 * r1)
+	leti	r2 0
+
+; The loop size is trivially 69 bits because it's the size of the last jump.
 nonzero:
-	shift	right r1 1
-	jumpif	nc 26
-	add2	r3 r2
+	shift	right r0 1
+	jumpif	nc 10
+	add2	r2 r1
 next:
-	shift	left r2 1
-	cmpi	r1 0
-	jumpif	nz -53
+	shift	left r1 1
+	cmpi	r0 0
+	jumpif	nz -69
+
+; Halt program (the emulator will detect this and avoid looping forever)
+	jump	-13

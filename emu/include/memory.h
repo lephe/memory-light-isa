@@ -101,7 +101,25 @@ void memory_destroy(memory_t *mem);
 //	Data access
 //---
 
-/* memory_read() -- read n bits from an address (up to 64) */
+/*
+	mem_at_end() -- check whether the end of the text segment is reached
+	Returns non-zero if no more instruction can be read from the given
+	program counter without overrunning the text segment.
+	This function exists because of the necessity to properly handle
+	byte-padding at the end of the binary file, and the influence of the
+	dynamic Huffman encoding on this detection.
+*/
+int mem_at_end(memory_t *mem, uint64_t pc);
+
+/*
+	memory_read() -- read n bits from an address (up to 64)
+	Reads up to 64 bits from the given address. Data is returned in
+	big-endian format.
+
+	@arg	mem	Memory to read from
+	@arg	address	Address of the first bit to read
+	@arg	n	Number of bits to read (at most 64)
+*/
 uint64_t memory_read(memory_t *mem, uint64_t address, size_t n);
 
 /* TODO - emu:memory - add a function to write data to memory */

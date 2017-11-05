@@ -33,6 +33,11 @@ typedef struct
 	uint c	:1;		/* Carry	ie. (uint)x < (uint)y */
 	uint n	:1;		/* Negative	ie. (int)x < (int) y */
 
+	/* Flags for the debugger */
+	uint h	:1;		/* Halt, detects loops of one instruction */
+	uint m	:1;		/* Memory, indicates changes to memory */
+	uint t	:1;		/* Counter, signals counter changes */
+
 	uint64_t ptr[4];	/* There are no pointers among r0..r7 */
 } cpu_t;
 
@@ -53,8 +58,14 @@ cpu_t *cpu_new(memory_t *mem);
 */
 void cpu_destroy(cpu_t *cpu);
 
-/* TODO -
-   Von Neumann cycles and stuff;
-   Signals when interesting things happen, for debugger */
+/*
+	cpu_execute() -- read an execute an instruction
+	This function changes the CPU state according to the instruction
+	located in the associated memory at address PC. It also updates the
+	debugger flags to signal interesting events.
+
+	@arg	cpu	CPU which executes the instruction
+*/
+void cpu_execute(cpu_t *cpu);
 
 #endif	/* CPU_H */

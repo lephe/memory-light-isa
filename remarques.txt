@@ -1,0 +1,200 @@
+# Remarques sur le jeu d'instructions
+
+On a essayé de les faire aussi constructives que possible. Voilà en gros de
+quoi ça parle :
+
+- Des combinaisons inutilisées de `shift`
+- L'absence de décalage de bits dynamique
+- Le choix de `addi` et `subi` non-signés
+- Le bit de direction de `shift`
+- Les sauts absolus signés (Sébastien)
+
+
+
+## Des combinaisons inutilisées de `shift`
+
+Il y a deux cas de paramètres pour `shift` qui sont utilisés, à savoir les cas
+où `shiftval` est représenté en binaire par `0_000000` ou `0_000001` :
+
+- Le premier parce qu'un décalage de 0 bit est inutile ;
+- Le second parce que la valeur 1 est représentée par `1`.
+
+Ce qui laisse deux séquences inutilisées dans chaque direction. Il serait
+clairement difficile de les exploiter pour faire autre chose compte tenu des
+changements compliqués à faire dans le circuit, mais il est intéressant de
+mentionner les rotations, qui n'ont pas été ajoutées au jeu d'instructions.
+
+
+
+## L'absence de décalage de bits dynamique
+
+Il n'y a aucune instruction qui permette d'effectuer `r0 = r0 << r1`, c'est
+contraignant. L'implémentation d'une telle fonction à partir du `shift`
+nécessite au moins 64 lignes (puisqu'il y a 64 décalages différents possibles).
+La plus optimisée qui me vienne à l'esprit consiste à sauter au bon endroit
+dans une suite de shift/return, mais ça nécessite d'ajuster PC à la volée en y
+ajoutant 22 × r1 (22 étant la taille d'un shift + return). Et comme il n'y a
+pas de multiplication simple, il faudrait au moins une chaîne additive pour
+faire ce calcul, et celle de 22 est longue (du genre 1→2→4→5→10→11→22).
+
+Et bien entendu ça ne marche que pour un registre cible et un registre source
+particuliers, il faut encore se taper tous les transferts pour en arriver là.
+Et ça ne permet pas de changer le sens du shift si `r1` est négatif. Bref...
+alors que dans l'autre sens, c'est nettement plus trivial pour implémenter le
+shift constant à partir du dynamique :
+
+    leti    r1 4
+    shiftd  r0 r1
+
+À ma connaissance, les archis implémentent plutôt le dynamique. Le seul exemple
+que je connaisse assez bien est le SuperH, et il ne possède de shift constant
+que pour des cas courants. Il a en fait les instructions suivantes :
+
+    shld    ri, rd      (Shift Logical Dynamic)
+    shad    ri, rd      (Shift Arithmetical Dynamic)
+    shllx   rd          (x = 1, 2, 8, 16)
+    shlrx   rd          (x = 1, 2, 8, 16)
+
+
+
+## Le choix de `addi` et `subi` non-signées
+
+Les instructions `addi` et `subi` savent toutes les deux réaliser exactement
+les mêmes opérations à cause de l'espace 64 bits circulaire. La seule chose qui
+les différencie est combien de bits il faut pour ajouter une constante donnée.
+
+En comparaison, un `addsi rd, cst` signé permettrait de faire les mêmes
+opérations à lui tout seul. La seule différence par rapport à `addi` et `subi`
+est le nombre de bits qu'il faut pour encoder les constantes qui sont à cheval
+entre deux classes. Par exemple 250 s'écrit sur 8 bits en non-signé, mais pas
+en signé (il faut alors recourir à la classe 32 bits pour `addsi`).
+
+Si l'on évalue le passage de la paire `addi`, `subi` à l'unique instruction
+`addsi`, on a donc d'un côté la perte résultant de l'usage de classes plus
+grandes pour certaines constantes et de l'autre le gain d'un opcode.
+
+Je ne vois pas de cas particulier qui puisse justifie que les constantes à la
+limite entre deux classes aient absolument besoin d'être encodées dans la plus
+petite de ces classes (ie. on ne se sert pas particulièrement souvent de 250,
+par exemple...), donc *a priori* le choix de `addsi` me paraît plus indiqué.
+
+
+
+## Le bit de direction de `shift`
+
+Entre ajouter un paramètre d'un bit au `shift` et utiliser deux opcodes, il n'y
+a *a priori* pas beaucoup de différences. Mais on peut se permettre de voir le
+bit de direction comme un bit supplémentaire distinguant deux opcodes :
+
+    shift left      10000
+    shift right     10001
+
+Et cela revient exactement à opérer une séparation dans l'arbre de Huffman du
+jeu d'instructions pour scinder `1000` en deux opcodes.
+
+Or, si `shift left` et `shift right` étaient considérées comme deux
+instructions indépendantes, l'algorithme de Huffman pourrait faire un choix
+plus optimisé que de les mettre côte à côté dans l'arbre. Du coup, il me semble
+que le choix de deux opcodes est toujours meilleur.
+
+
+
+## Les saut absolus signés (Sébastien)
+
+Comme vous ne m'avez pas trouvé convaincant en cours, je retente ma chance au
+propre. Mon « argumentation » se tient en trois points :
+
+1. Placer des fonctions à des addresses négatives n'apporte rien de nouveau
+2. Gérer la mémoire d'un programme qui saute dans les négatifs est contraignant 
+3. Si on ne saute pas dans les négatifs, on perd de la place dans les `call`
+
+Si la taille du code est de l'ordre de la taille de la mémoire (ie. le code
+prend toute la place), alors ça ne sert à rien d'en discuter puisque faire des
+sauts signés ou non signés revient exactement au même : on saute partout. Je me
+place donc dans le cas où la taille du programme est « faible », disons pas
+plus d'1/4 de la mémoire. En particulier, le programme tient dans une seule
+moitié de la mémoire.
+
+Pour appuyer le premier point, considérons un programme qui a des fonctions
+dans la zone d'adresses positives et dans la zone d'adresses négatives. Pour
+optimiser la place prise dans la mémoire, il est naturel de vouloir utiliser
+les addresses représentables sur peu de bits, donc de faibles valeurs absolues.
+On se retrouve alors dans cette situation :
+
+    Négatifs <------ 0 ------> Positifs      (Figure 1)
+    ...  Programme   |   Programme  ...
+
+Cependant, par une simple translation, on peut se ramener à une situation où
+seule la moitié positive de la mémoire est utilisée :
+
+    <-- 0 -----------------> Positifs        (Figure 2)
+    ... |  Programme   Programme  ...
+
+La translation n'a pas de coût sur le nombre de bits nécessaire pour encoder
+les adresses si on pense à passer `call` en non-signé. De plus, le loader du
+système peut bien partitionner la mémoire virtuelle comme ça lui chante, donc
+faire le second choix n'est pas contraignant. Ainsi, utiliser les addresses
+négatives ne permet rien de plus que ce qu'on a avec uniquement les positives.
+
+Concernant le second point : si on regarde comment un loader s'y prend pour
+charger un programme, on se rend compte que les exécutables sont chargés d'un
+seul bloc. Par exemple, la localisation dans la mémoire virtuelle de
+l'exécutable de Firefox Nightly sur mon PC ressemble à ceci :
+
+    0000000000400000    212K r-x-- /opt/firefox-nightly/firefox
+    0000000000634000      4K r---- /opt/firefox-nightly/firefox
+    0000000000635000      4K rw--- /opt/firefox-nightly/firefox
+
+Donc trois sections : le code en lecture/exécution, suivi de la section de
+données en lecture seule, puis la section de donnée en lecture/écriture. Le
+code proprement dit est donc chargé dans une zone de mémoire continue (212K).
+
+Si jamais on veut mettre du code à la fois dans les adresses positives et
+négatives, on doit toujours s'imposer au moins une complication quelque part
+dans le processus de développement/compilation/exécution :
+
+- Soit on sépare la section de texte en plusieurs morceaux, mais alors des
+  références internes au programme peuvent être cassées (comme « saute à
+  l'addresse qui est à 172 octets de l'instruction actuelle ») si la coupure
+  intervient n'importe comment. Il faut donc compiler les programmes avec
+  d'infinies précautions pour qu'il puisse y avoir un découpage qui ne casse
+  rien, et on n'a même pas de garantie qu'on pourra découper comme on voudra ;
+
+- Soit on garde tout dans un bloc autour de 0 (comme sur la figure 1), mais
+  alors l'assembleur doit choisir où va chaque fonction (dans les positifs, ou
+  dans les négatifs), en sachant que pour que les `call` soient efficaces il
+  faut utiliser autant de négatifs que de positifs. (Par exemple si on utilise
+  [-30, 170], 8 bits ne suffisent pas pour représenter 170, mais si on utilise
+  intelligement [-100, 100], toutes les adresses tiennent sur 8 bits.) Alors
+  que si on n'utilise que les positifs on part de 0 et on va croissant, ce qui
+  garantit la compacité maximale sans effort.
+
+Ainsi supporter le code dans les zones d'adresses négatives est plus compliqué
+que de s'en tenir aux positives. Suffisamment pour que je n'aie,
+personnellement, pas envie de me casser la tête avec.
+
+On en vient au troisième point. Si on se contente de mettre le code dans les
+zones d'adresses positives pour s'éviter les tracas exposés plus haut, il y
+aura tout un paquet de `call` qu'on ne fera pas ; tous ceux qui sont de la
+forme suivante :
+
+    call 0   1xxxxxxx
+    call 10  1xxxxxxxxxxxxxxx
+    call 110 1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    call 111 1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Et ce car l'extension de signe rendrait les addresses ciblées négatives, donc
+nous enverrait vers la deuxième moitié de la mémoire. Or, comme le programme
+est petit, il tient dans la première moitié (c'était notre hypothèse).
+
+Par conséquent, le premier bit de toutes les adresses de saut sera
+systématiquement 0. Un 0 constant ne portant aucune information, on gaspille un
+bit par utilisation de `call`. (Et ça on n'a pas envie.)
+
+Alors que tout ce que l'utilisation d'un `call` non-signé impose est
+l'implémentation en matériel d'une copie du circuit de décodage des adresses,
+qui ferait des extensions logiques au lieu d'extensions arithmétiques. Et si
+ma compréhension de l'électronique est suffisamment précise, il suffit en fait
+d'ajouter un porte ET entre le signal « extension logique = 0, extension
+arithmétique = 1 » et le MSB au moment de l'extension pour obtenir le résultat
+désiré. Cela me paraît relativement simple à gérer en comparaison.

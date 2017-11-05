@@ -1,4 +1,5 @@
 #include <disasm.h>
+#include <util.h>
 #include <stdint.h>
 
 #define	r4(n)	n, n, n, n
@@ -35,23 +36,6 @@ static const char instructions[37][16] = {
 	"rrl A xor3i",	"rrh A asr3",	"--- C (res)",	"--- C (res)",
 	"--- C (res)",
 };
-
-/*
-	sign_extend()
-	Performs sign extension of the value x, which is stored in a signed
-	n-bit format, into 64-bit signed format. For more info, see the mighty
-	Bit Twiddling Hacks reference:
-	http://graphics.stanford.edu/~seander/bithacks.html#VariableSignExtend
-
-	@arg	x	Value to sign-extend
-	@arg	n	Number of bits on which x is represented
-	@return		x in signed 64-bit format
-*/
-static inline int64_t sign_extend(uint64_t x, uint n)
-{
-	uint64_t m = 1ul << (n - 1);
-	return (x ^ m) - m;
-}
 
 /* disasm_opcode() -- read an instruction code */
 uint disasm_opcode(memory_t *mem, uint64_t *ptr, const char **format)

@@ -90,6 +90,32 @@ void memory_destroy(memory_t *mem)
 	free(mem);
 }
 
+
+
+//---
+//	Data access
+//---
+
+/* mem_at_end() -- check whether the end of the text segment is reached */
+#include <string.h>
+#include <disasm.h>
+int mem_at_end(memory_t *mem, uint64_t pc)
+{
+	/* TODO - This sould use a segment size indicator from the file */
+
+	/* There may not be more that 7 bits padding */
+	if(pc < mem->text - 7) return 0;
+
+	/* No instruction fits in 6 bits, so we can rule these cases out */
+	if(pc >= mem->text - 6) return 1;
+
+	/* Now there are some instructions that are exactly 7 bits long, but
+	   they have no parameters. Let's check this */
+	const char *format;
+	disasm_opcode(mem, &pc, &format);
+	return !!strncmp(format, "---", 3);
+}
+
 /* memory_read() -- read n bits from an address (up to 64) */
 uint64_t memory_read(memory_t *mem, uint64_t address, size_t n)
 {

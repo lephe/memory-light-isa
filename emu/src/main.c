@@ -20,13 +20,8 @@
 */
 typedef struct
 {
-	/* TODO - Think more about how these should work (and compatibility
-	   with the subject's model) */
-	enum {
-		mode_run	= 1,
-		mode_debug	= 2,
-		mode_graphical	= 3,
-	} mode		:8;
+	uint debugger	:1;
+	uint graphical	:1;
 	uint help	:1;
 
 	uint64_t	memsize;	/* Dynamic memory size */
@@ -72,7 +67,8 @@ static uint64_t sizetoi(const char *arg)
 static void parse_args(int argc, char **argv, opt_t *opt)
 {
 	/* Clear structure with default values */
-	opt->mode = opt->help = 0;
+	opt->debugger = opt->graphical = 0;
+	opt->help = 0;
 	opt->memsize = opt->stack = 0;
 	opt->filename = NULL;
 
@@ -83,20 +79,12 @@ static void parse_args(int argc, char **argv, opt_t *opt)
 		const char *arg = argv[i];
 
 		/* Mode arguments */
-		int newmode = 0;
-		if(!strcmp(arg, "-r") || !strcmp(arg, "-run"))
-			newmode = mode_run;
-		if(!strcmp(arg, "-d") || !strcmp(arg, "-debug"))
-			newmode = mode_debug;
-		if(!strcmp(arg, "-g") || !strcmp(arg, "-graphical"))
-			newmode = mode_graphical;
-
-		/* Reject mode arguments if finding more than one */
-		if(newmode)
-		{
-			if(opt->mode) error("unexpected mode: '%s'", arg);
-			else opt->mode = newmode;
-		}
+		if(!strcmp(arg, "-r") || !strcmp(arg, "--run"))
+			opt->debugger = 0;
+		else if(!strcmp(arg, "-d") || !strcmp(arg, "--debug"))
+			opt->debugger = 1;
+		else if(!strcmp(arg, "-g") || !strcmp(arg, "--graphical"))
+			opt->graphical = 1;
 
 		/* Arguments related to memory geometry */
 		else if(!strcmp(arg, "--stack-addr"))
@@ -142,12 +130,12 @@ static void parse_args(int argc, char **argv, opt_t *opt)
 
 const char *help_string =
 "emu - an emulator and debugger for a fictional processor\n"
-"usage: %s [-run|-debug|-graphical] <binary> [options...]\n\n"
+"usage: %s [-r|-d] [-g] <binary> [options...]\n\n"
 
-"Available run modes:\n"
-"  -r | -run              Normal running mode with output to terminal\n"
-"  -d | -debug            Step-by-step execution with debug information\n"
-"  -g | -graphical        Same as -run, but also emulate the screen\n\n"
+"Available run modes (default is -r):\n"
+"  -r | --run         Normal execution, shows CPU state when program ends\n"
+"  -d | --debug       Run the debugger: step-by-step, breakpoints, etc\n"
+"  -g | --graphical   With -r or -d, enable graphical I/O using SDL\n\n"
 
 "Available options:\n"
 "  --stack-addr  <addr>   Set the bottom stack address (default 1M)\n"
@@ -202,9 +190,9 @@ int main(int argc, char **argv)
 	if(argc == 1 || opt.help) help((const char **)argv);
 	if(!opt.filename) fatal("no input file");
 
-	if(opt.mode == mode_run)
+	if(!opt.debugger)
 		fatal("cannot honor run mode x_x (TODO)");
-	if(opt.mode == mode_graphical)
+	if(opt.graphical)
 		fatal("cannot honor graphical mode x_x (TODO)");
 
 	/* Allocate a virtual memory and load the program into it */

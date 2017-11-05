@@ -7,6 +7,8 @@
 #include <debugger.h>
 #include <disasm.h>
 
+/* TODO - Make the stack view a generic memory view */
+
 /* Variables shared by the components of the debugger module */
 
 WINDOW *wcode		= NULL;		/* Disassembled code */
@@ -18,6 +20,8 @@ WINDOW *wcli		= NULL;		/* Debugger console */
 cpu_t *debugger_cpu	= NULL;		/* Debugged CPU */
 memory_t *debugger_mem	= NULL;		/* Debugged memory */
 
+static void draw_reg(void);
+static void draw_stack(void);
 
 
 //---
@@ -32,15 +36,22 @@ memory_t *debugger_mem	= NULL;		/* Debugged memory */
 
 static const char *help_string =
 "Available commands:\n"
-"  q    Quit debugger\n"
 "  s    Step next instruction\n"
 "  b    Manage breakpoints (try 'help b')\n"
-"  r    Run until breakpoint, halt or end of program\n";
+"  r    Run until breakpoint, halt or end of program\n"
+"  d    Disassemble program (try 'help d')\n"
+"  q    Quit debugger\n";
 static const char *help_string_b =
 "Manage breakpoints:\n"
 "  b           Show all configured breakpoints\n"
 "  b <addr>    Add a breakpoint at the given address\n"
 "  b - <addr>  Remove a breakpoint at the given address\n";
+static const char *help_string_d =
+"Disassemble program:\n"
+"  d           Disassemble at PC and follow PC during execution\n"
+"  d <addr>    Disassemble the given location and stay there when PC moves\n";
+
+/* TODO - Show any memory, show stack, change program state, more? */
 
 /*
 	debugger_help_log() -- simple hack to color the command names
@@ -83,11 +94,23 @@ static void debugger_help(int argc, char **argv)
 	for(int i = 1; i < argc; i++)
 	{
 		if(!strcmp(argv[i], "b")) debugger_help_log(help_string_b);
+		if(!strcmp(argv[i], "d")) debugger_help_log(help_string_d);
 	}
 }
 
 static void debugger_step(void)
 {
+	cpu_execute(debugger_cpu);
+
+	/* FIXME - We don't need to refresh the code panel now if
+	   1. We are not following PC
+	   2. PC was not, and is still not, visible in the current area */
+	debugger_code();
+
+	draw_reg();
+	draw_stack();
+
+	/* TODO - Set the halt status on cpu->h */
 }
 
 static void debugger_break(void)
@@ -96,6 +119,7 @@ static void debugger_break(void)
 
 static void debugger_run(void)
 {
+	/* Check if CPU is at end of text section */
 }
 
 //---
@@ -275,7 +299,7 @@ void debugger(const char *filename, cpu_t *cpu)
 	if(filename)
 	{
 		wattron(wcli, COLOR_PAIR(color_magenta));
-		dbglog("Initial load: %s\n", filename);
+		dbglog("Loaded %s\n", filename);
 		wattroff(wcli, COLOR_PAIR(color_magenta));
 	}
 	dbglog("Welcome to the debugger. Type 'help' to get a summary of the "
@@ -298,8 +322,9 @@ void debugger(const char *filename, cpu_t *cpu)
 		while((argv[argc] = strtok(NULL, " \t"))) argc++;
 
 		/* Call the associated function */
-		if(!strcmp(argv[0], "q")) break;
-		else if(!strcmp(argv[0], "help")) debugger_help(argc, argv);
+		if(!strcmp(argv[0], "help")) debugger_help(argc, argv);
+		else if(!strcmp(argv[0], "q")) break;
+		else if(!strcmp(argv[0], "s")) debugger_step();
 		else dbgerr("unknown command '%s'\n", argv[0]);
 	}
 

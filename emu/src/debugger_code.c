@@ -3,7 +3,7 @@
 //
 //	This module is an interface-oriented component of the debugger. It
 //	manages the disassembler windows, choosing what should be displayed and
-//	where. It does not actually performs the disassembling, see emu:disasm
+//	where. It does not actually performs the disassembling; see emu:disasm
 //	for this part.
 //---
 
@@ -24,8 +24,8 @@
    Sometimes it's shown only if arguments do not contain 64-bit values, because
    these are rare. If the disassembler window is *really* small, the address
    information at the beginning is also left out. Finally, if the instruction
-   is currently being pointed at by PC, a PC counter appears at the far right.
-*/
+   is currently being pointed at by PC, "PC" appears at the far right. */
+
 static int geom_addr = -1;	/* Length of memory addresses */
 static int geom_info = -1;	/* Position of left information */
 static int geom_base = -1;	/* Position of mnemonic and arguments */
@@ -41,9 +41,8 @@ static int geom_cmpl = -1;	/* Do we have enough space for complementary
 
 	@arg	ptr	Pointer to current location counter (ie. PC), updated
 	@arg	type	Argument type
-	@arg	pc	Current value of PC, used to compute jump targets
 */
-static void debugger_arg(uint64_t *ptr, arg_t type, uint64_t pc)
+static void debugger_arg(uint64_t *ptr, arg_t type)
 {
 	/* TODO - Bad design here, it is not this function's responsibility to
 	   print the complementary information.
@@ -96,7 +95,7 @@ static void debugger_arg(uint64_t *ptr, arg_t type, uint64_t pc)
 		wprintw(wcode, " %s0x%0*lx", sign, size >> 2, u64);
 
 		/* Compute the target address for jumps */
-		i64 += pc;
+		i64 += *ptr;
 
 		/* Determine whether we display it or not (geometry) */
 		if(geom_comp == -1) return;
@@ -162,18 +161,11 @@ static void debugger_disasm(uint64_t ptr)
 		row = i + 1;
 		copy = ptr;
 
+		/* Leave if we've reached the end of the text segment */
+		if(mem_at_end(debugger_mem, ptr)) break;
+
 		/* Get an opcode from the current program counter */
 		disasm_opcode(debugger_mem, &ptr, &format);
-
-		/* We need to determine the location where the text segment
-		   ends. Because of file byte-padding, up to 7 additional bits
-		   may exist, and some instructions fit in 7 bits. */
-
-		/* TODO FIXME - I don't like this
-		   Leaving if the 7-bit instruction has any arguments */
-		if(ptr + 7 > debugger_mem->text) break;
-		if(ptr + 7 == debugger_mem->text && strncmp(format, "---", 3))
-			break;
 
 		/* Display instruction addresses if there's enough space */
 		if(geom_info >= 0)
@@ -199,7 +191,7 @@ static void debugger_disasm(uint64_t ptr)
 
 		/* Display arguments, if any */
 		for(size_t j = 0; j < 3; j++)
-			debugger_arg(&ptr, format[j], copy);
+			debugger_arg(&ptr, format[j]);
 
 		/* If this instruction is currently being pointed at by the
 		   program counter, highlight it */

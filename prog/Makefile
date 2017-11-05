@@ -7,5 +7,4 @@ all: $(obj)
 
 %.bin: %.s
 	sed '/[:]/ d' $< > /tmp/$<
-	python3 ../bitcodegen/myasm.py /tmp/$*
-	mv /tmp/$*.{bin,debug} $(dir $@)
+	../compileme -b /tmp/$< --output=$@
