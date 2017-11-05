@@ -28,6 +28,8 @@ class Parser(object):
                 self.functions[funcname][preasr_args] = (asr_funcname,
                                                          asr_args)
 
+        self.labels = dict()
+
     def run(self):
         for token in self.lexer_gen:
             if token.typ is LexType.COMMENT:
@@ -37,7 +39,7 @@ class Parser(object):
                 try:
                     self.handle_one()
                 except ParserError as e:
-                    print(f"/!\ Error on line {token.line}:")
+                    print(f"/!\ Parser Error on line {token.line}:")
                     print(f"/!\       {e}")
                     return None
 
@@ -60,6 +62,7 @@ class Parser(object):
                         raise ParserError("No operand found in not empty line")
 
                 res.push(self.stack.pop())
+
             else:
                 break
         else:

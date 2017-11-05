@@ -14,7 +14,7 @@ class BackEnd(object):
     def to_file(self, filename):
         with open(filename, self.write_mode) as f:
             for packet in self.packets():
-                if b not in self.write_mode:
+                if "b" not in self.write_mode:
                     f.write(packet + "\n")
                 else:
                     f.write(packet)

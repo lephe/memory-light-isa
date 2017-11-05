@@ -1,5 +1,6 @@
 import collections
 import itertools
+import re
 
 from .enums import ValueType, LexType
 from .lexer import Lexer
@@ -150,6 +151,11 @@ def count_operations(c, it):
 
 
 def compile_asm(s, *, back_end=MemonicBackEnd, generate_tree=False):
+
+    # Start by translating .p to .ps
+    for new, olds in possible_transition.items():
+        olds.sort(reverse=True, key=lambda x: len(x))
+        s = re.sub("(" + "|".join(olds) + ")", new, s)
 
     # tokenize the pre-asm
     lexer = Lexer()

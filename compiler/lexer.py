@@ -73,6 +73,9 @@ class Lexer(object):
                 raise TokenError(
                     f'invalid syntax at line {line_num} : {value}')
 
+            elif kind is LexType.LABEL:
+                pass
+
             else:
                 column = match.start() - line_start
                 yield Token(kind, value, line_num, column)
