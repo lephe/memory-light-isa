@@ -80,7 +80,7 @@ class CleartextBitcodeBackEnd(BackEnd):
         "lt": "110",
         "le": "111"}
 
-    def handle_line(self, line):
+    def handle_line(self, line, space=True):
         funcname, typed_args, linenumber = line
 
         realise_line = [self.huffman_tree[funcname]]
@@ -94,7 +94,7 @@ class CleartextBitcodeBackEnd(BackEnd):
 
             realise_line.append(method(raw_value))
 
-        self.out_queue.push(" ".join(realise_line))
+        self.out_queue.push((" " if space else "").join(realise_line))
 
     def binary_repr(self, n, k, signed=False):
         """Given n an int, it return it's binary representation on k bits"""
@@ -198,6 +198,9 @@ class CleartextBitcodeBackEnd(BackEnd):
 
     def bin_condition(self, val):
         return self.conditions[val]
+
+    def bin_label(self, val):
+        raise BackEndError("Label unsported in this mode (faut pas déconner)")
 
 
 class BinaryBitcodeBackEnd(CleartextBitcodeBackEnd):

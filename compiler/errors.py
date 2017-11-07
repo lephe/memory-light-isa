@@ -8,3 +8,7 @@ class ParserError(RuntimeError):
 
 class BackEndError(RuntimeError):
     pass
+
+
+class ImpossibleError(RuntimeError):
+    pass

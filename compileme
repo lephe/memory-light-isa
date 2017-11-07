@@ -5,6 +5,7 @@ import argparse
 from compiler.compileuh import compile_asm
 from compiler.back_end import MemonicBackEnd, CleartextBitcodeBackEnd
 from compiler.back_end import BinaryBitcodeBackEnd
+from compiler.labels import LabelsClearTextBackEnd, LabelsBinaryBitcodeBackEnd
 
 import sys
 
@@ -34,6 +35,12 @@ if __name__ == "__main__":
     group_backend.add_argument("-b", "--binary", action="store_const",
                                dest="back_end", const=BinaryBitcodeBackEnd,
                                help="output in binary")
+    group_backend.add_argument("-l", "--label", action="store_const",
+                               dest="back_end", const=LabelsClearTextBackEnd,
+                               help="Clear text with labels")
+    group_backend.add_argument("-x", "--bin_label", action="store_const",
+                               dest="back_end", const=LabelsBinaryBitcodeBackEnd,
+                               help="Clear text with labels")
 
     parser.add_argument('--huffman', action="store_true",
                         help="generate the huffman tree")

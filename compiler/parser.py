@@ -3,6 +3,7 @@ import collections
 from .util import Stack, Queue, inv_dict_list
 from .enums import LexType, ValueType, Value, Line, NB_REG
 from .errors import ParserError
+from .enums import Token
 
 
 class Parser(object):
@@ -54,19 +55,16 @@ class Parser(object):
 
         while not self.stack.is_empty():
             if self.stack[-1].typ is not LexType.OPERATION:
-
-                if self.stack[-1].typ is LexType.NEWLINE:
-                    if len(res) is 0:
-                        return ()  # Empty tuple
-                    else:
-                        raise ParserError("No operand found in not empty line")
-
                 res.push(self.stack.pop())
 
             else:
                 break
         else:
-            if len(res) is not 0:
+            if len(res) is 1 and res[0].typ is LexType.LABEL:
+                res.push(Token(LexType.OPERATION, "label", res[0].line,
+                               res[0].column))
+                return tuple(res)
+            elif len(res) is not 0:
                 raise ParserError("The stack is empty : couldn't find operand")
             else:
                 return ()
@@ -149,4 +147,7 @@ right range")
 
     def read_register(self, value):
         assert value in range(NB_REG)
+        return value
+
+    def read_label(self, value):
         return value

@@ -15,7 +15,6 @@ def inv_dict_list(dictionnary):
 
     return inv_d
 
-
 class Queue(collections.deque):
     """ Fast Queue based on collections.deque"""
 

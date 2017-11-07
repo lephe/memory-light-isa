@@ -25,7 +25,7 @@ class Lexer(object):
             LexType.COMMENT:    r';.*',
             LexType.CONDITION:  r'eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le',
             LexType.MEMCOUNTER: r'pc|sp|a0|a1',
-            LexType.LABEL:      r'[a-zA-Z][a-zA-Z0-9]*:',
+            LexType.LABEL:      r'[a-zA-Z][a-zA-Z0-9]*:?',
 
             # Tokenizer stuff
             LexType.NEWLINE:  r'\n',
@@ -74,7 +74,9 @@ class Lexer(object):
                     f'invalid syntax at line {line_num} : {value}')
 
             elif kind is LexType.LABEL:
-                pass
+                column = match.start() - line_start
+                # yield Token(LexType.OPERATION, "label", line_num, column)
+                yield Token(LexType.LABEL, value, line_num, column)
 
             else:
                 column = match.start() - line_start
@@ -104,7 +106,7 @@ class Lexer(object):
     def lex_value_NUMBER(self, value):
         """ value is a string in the form r'[+-]?(?:0x[0-9A-Fa-f]+|[0-9]+)' """
 
-        if value[:2].lower() == "0x":
+        if "0x" in value.lower():
             return int(value, 16)
 
         return int(value)
@@ -113,3 +115,10 @@ class Lexer(object):
         """ value is a string in the form r'(?:r|R)[0-9]+' """
 
         return int(value[1:])
+
+    def lex_value_LABEL(self, value):
+
+        if ":" in value:
+            return value[:-1]
+        else:
+            return value

@@ -22,15 +22,16 @@ possible_transition = {
     "shift":  ["shift"],
     "readze": ["readze"],
     "readse": ["readse"],
-    "jump":   ["jump", "jumpif"],
+    "jump":   ["jump", "jumpif", "jumpl", "jumpifl"],
     "write":  ["write"],
-    "call":   ["call"],
+    "call":   ["call", "calll"],
     "setctr": ["setctr"],
     "getctr": ["getctr"],
     "push":   ["push"],
     "return": ["return"],
     "asr":    ["asr3"],
-    "pop":    ["pop"]}
+    "pop":    ["pop"],
+    "label":  ["label"]}
 
 
 VT = ValueType
@@ -41,7 +42,8 @@ type_specs = {
     LexType.DIRECTION:  [VT.DIRECTION],
     LexType.CONDITION:  [VT.CONDITION],
     LexType.MEMCOUNTER: [VT.MEMCOUNTER],
-    LexType.REGISTER:   [VT.REGISTER]
+    LexType.REGISTER:   [VT.REGISTER],
+    LexType.LABEL:      [VT.LABEL]
 }
 
 asr_specs = {
@@ -69,6 +71,8 @@ asr_specs = {
 
     "jump":    (VT.RADDRESS,),
     "jumpif":  (VT.CONDITION, VT.RADDRESS),
+    "jumpl":   (VT.LABEL,),
+    "jumpifl": (VT.CONDITION, VT.LABEL),
 
     "or2":     (VT.REGISTER, VT.REGISTER),
     "or2i":    (VT.REGISTER, VT.SCONSTANT),
@@ -82,6 +86,7 @@ asr_specs = {
 
     "write":   (VT.MEMCOUNTER, VT.SIZE, VT.REGISTER),
     "call":    (VT.RADDRESS,),
+    "calll":   (VT.LABEL,),
     "setctr":  (VT.MEMCOUNTER, VT.REGISTER),
     "getctr":  (VT.MEMCOUNTER, VT.REGISTER),
     "push":    (VT.SIZE, VT.REGISTER),
@@ -95,7 +100,9 @@ asr_specs = {
 
     "reserved1":   (),
     "reserved2":   (),
-    "reserved3":   ()}
+    "reserved3":   (),
+
+    "label":       (VT.LABEL,)}
 
 del VT
 
@@ -170,7 +177,7 @@ def compile_asm(s, *, back_end=MemonicBackEnd, generate_tree=False):
 
         # Generate and save the huffman-tree of the opcodes
         c = collections.Counter()
-        for key in asr_specs.keys():
+        for key in default_opcode.keys():
             if key[:-1] != "reserved":
                 c[key] = 0
 

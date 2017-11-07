@@ -35,5 +35,6 @@ class ValueType(enum.Enum):
     RADDRESS = enum.auto()  # Relative address
     AADDRESS = enum.auto()  # Absolute address
     SHIFTVAL = enum.auto()
-    SIZE = enum.auto()
     REGISTER = enum.auto()
+    LABEL = enum.auto()
+    SIZE = enum.auto()
