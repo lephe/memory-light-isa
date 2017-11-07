@@ -60,8 +60,8 @@ void memory_load(memory_t *mem, const char *filename)
 	fseek(fp, 0, SEEK_SET);
 
 	/* Check that it fits into memory */
-	if(size > mem->stack) error("program is too large to fit in the code/"
-		"stack segment (%d > %d)", size, mem->stack);
+	if(8 * size > mem->stack) error("program is too large to fit in the "
+		"code/stack segment (%d > %d)", size, mem->stack);
 
 	/* Read the data and close the file */
 	else
