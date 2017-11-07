@@ -108,6 +108,8 @@ class Lexer(object):
 
         if "0x" in value.lower():
             return int(value, 16)
+        if value[:3].lower() == "-0x":
+            return -int(value[1:], 16)
 
         return int(value)
 
