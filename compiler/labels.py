@@ -4,16 +4,14 @@ from .enums import Line
 
 
 class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
+    bit_cost = {8: 9, 16: 18, 32: 35, 64: 67}
 
-    def packets(self):
-        it = iter(self.line_gene)
-
+    def get_fullcode(self):
         #  List containning (len, bitcode/jump/label)
         fullcode = []
-
         acc = ""
 
-        for line in it:
+        for line in self.line_gene:
             print(line)
             if line.funcname not in ("jumpl", "jumpifl", "calll", "label"):
                 CleartextBitcodeBackEnd.handle_line(self, line, space=False)
@@ -30,81 +28,109 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
                     bitcode = self.huffman_tree[line.funcname[:-1]]
 
                 if line.funcname is "jumpl":
-                    fullcode.append((len(bitcode) + 9, line))
+                    fullcode.append((len(bitcode), line))
                 elif line.funcname is "jumpifl":
-                    fullcode.append((len(bitcode) + 9 + 3, line))
+                    fullcode.append((len(bitcode) + 3, line))
                 elif line.funcname is "calll":
-                    raise NotImplementedError()
+                    fullcode.append((len(bitcode), line))
                 elif line.funcname is "label":
                     fullcode.append((0, line))
 
                 acc = ""
 
-        label_dict = dict()
+        return fullcode
 
+    def get_label_pos(self, fullcode):
+
+        # Get position for all the labels
+        label_dict = dict()
         for i, (l, x) in enumerate(fullcode):
             if type(x) is Line:
                 if x.funcname is "label":
                     label = x.typed_args[0].raw_value
                     label_dict[label] = i
 
+        return label_dict
+
+    def count_bytes(self, fullcode, addr_values, i, j):
+        # Forward jump Can be call too
+        if j < i:
+            s = 0
+            for k in range(j+1, i):
+                s += fullcode[k][0]
+                if k in addr_values:
+                    nb_bit = addr_values[k][0]
+                    s += self.bit_cost[nb_bit]
+
+            return s
+
+        # Backward jump
+        elif j > i:
+            s = 0
+            for k in range(i, j+1):
+                s += fullcode[k][0]
+                if k in addr_values:
+                    nb_bit = addr_values[k][0]
+                    s += self.bit_cost[nb_bit]
+            return s
+
+    def packets(self):
+
+        fullcode = self.get_fullcode()
+
+        # Get position for all the labels
+        label_dict = self.get_label_pos(fullcode)
+
         addr_values = dict()
 
+        # addr init
         for j, (l, x) in enumerate(fullcode):
-            if type(x) is Line:
-                if x.funcname is "jumpl":
-                    label = x.typed_args[0].raw_value
-                elif x.funcname is "jumpifl":
-                    label = x.typed_args[1].raw_value
+            if type(x) is Line and x.funcname in ("jumpl", "jumpifl", "calll"):
+                addr_values[j] = (8, 0)
 
-                if x.funcname in ("jumpl", "jumpifl"):
+        while True:
+
+            for j, (l, x) in enumerate(fullcode):
+                if type(x) is Line and x.funcname in ("jumpl", "jumpifl"):
+                    if x.funcname is "jumpl":
+                        label = x.typed_args[0].raw_value
+                    elif x.funcname is "jumpifl":
+                        label = x.typed_args[1].raw_value
+
                     if label not in label_dict:
                         raise BackEndError("Undefined label")
 
                     i = label_dict[label]
 
-                    if j < i:
-                        # Forward jump
+                    nb_bit, old_s = addr_values[j]
 
-                        s = 0
-                        for k in range(j+1, i):
-                            s += fullcode[k][0]
+                    s = self.count_bytes(fullcode, addr_values, i, j)
 
-                        if s in range(-2**7, 2**7):
-                            addr_values[j] = (8, s)
-                            continue
+                    if s not in range(2**(nb_bit-1), 2**(nb_bit-1)):
+                        if nb_bit == 64:
+                            raise BackEndError("Too big jump")
+                        addr_values[j] = (nb_bit * 2, s)
+                        break
 
-                    elif j > i:
-                        # Backward jump
-                        s = 0
-                        for k in range(i, j+1):
-                            s += fullcode[k][0]
-                        if s in range(-2**7, 2**7):
-                            addr_values[j] = (8, s)
-                            continue
+            else:
+                break
 
-                    else:
-                        raise ImpossibleError("jump can't be a label")
-        else:
-            endcode = []
-            for i, (l, x) in enumerate(fullcode):
-                if type(x) is str:
-                    endcode.append(x)
-                elif type(x) is Line and x.funcname is "label":
-                    pass
+        endcode = []
+        for i, (l, x) in enumerate(fullcode):
+            if type(x) is str:
+                endcode.append(x)
+            elif type(x) is Line and x.funcname is "label":
+                pass
 
-                elif type(x) is Line and x.funcname in ("jumpifl", "jumpl"):
-                    bitcode = self.huffman_tree[x.funcname[:-1]]
-                    print(bitcode)
-                    endcode.append(bitcode)
-                    if x.funcname is "jumpifl":
-                        cond = x.typed_args[0].raw_value
-                        endcode.append(self.bin_condition(cond))
-                    k, n = addr_values[i]
-                    endcode.append(self.binary_repr(n, k, signed=True))
+            # x.funcname is "jumpl" or "jumpifl" or "call"
+            elif type(x) is Line:
+                bitcode = self.huffman_tree[x.funcname[:-1]]
 
-            return endcode
+                endcode.append(bitcode)
+                if x.funcname is "jumpifl":
+                    cond = x.typed_args[0].raw_value
+                    endcode.append(self.bin_condition(cond))
+                k, n = addr_values[i]
+                endcode.append(self.binary_repr(n, k, signed=True))
 
-
-class LabelsBinaryBitcodeBackEnd(LabelsClearTextBackEnd, BinaryBitcodeBackEnd):
-    pass
+        return endcode

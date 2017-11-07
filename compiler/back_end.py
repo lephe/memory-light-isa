@@ -80,7 +80,13 @@ class CleartextBitcodeBackEnd(BackEnd):
         "lt": "110",
         "le": "111"}
 
-    def handle_line(self, line, space=True):
+    def handle_line(self, line, space=None):
+        if space is None:
+            if b in self.write_mode:
+                space = False
+            else:
+                space = True
+
         funcname, typed_args, linenumber = line
 
         realise_line = [self.huffman_tree[funcname]]
