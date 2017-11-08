@@ -178,7 +178,7 @@ class LabelsBinaryBackEnd(LabelsClearTextBackEnd):
         q = len(bitcode)//8
 
         with open(filename, self.write_mode) as f:
-            # f.write(q.to_bytes(8, byteorder="big"))
+            f.write(q.to_bytes(8, byteorder="big"))
             for k in range(q):
                 lul = "0b" + bitcode[8*k:8*(k+1)]
                 # print(bytes([int(lul, 2)]))

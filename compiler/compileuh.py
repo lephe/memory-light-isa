@@ -58,7 +58,7 @@ asr_specs = {
     "sub3i":   (VT.REGISTER, VT.REGISTER, VT.UCONSTANT),
 
     "cmp":     (VT.REGISTER, VT.REGISTER),
-    "cmpi":    (VT.REGISTER, VT.SCONSTANT),
+    "cmpi":    (VT.REGISTER, VT.UCONSTANT),
 
     "let":     (VT.REGISTER, VT.REGISTER),
     "leti":    (VT.REGISTER, VT.SCONSTANT),
@@ -75,14 +75,14 @@ asr_specs = {
     "jumpifl": (VT.CONDITION, VT.LABEL),
 
     "or2":     (VT.REGISTER, VT.REGISTER),
-    "or2i":    (VT.REGISTER, VT.SCONSTANT),
+    "or2i":    (VT.REGISTER, VT.UCONSTANT),
     "or3":     (VT.REGISTER, VT.REGISTER, VT.REGISTER),
-    "or3i":    (VT.REGISTER, VT.REGISTER, VT.SCONSTANT),
+    "or3i":    (VT.REGISTER, VT.REGISTER, VT.UCONSTANT),
 
     "and2":    (VT.REGISTER, VT.REGISTER),
-    "and2i":   (VT.REGISTER, VT.SCONSTANT),
+    "and2i":   (VT.REGISTER, VT.UCONSTANT),
     "and3":    (VT.REGISTER, VT.REGISTER, VT.REGISTER),
-    "and3i":   (VT.REGISTER, VT.REGISTER, VT.SCONSTANT),
+    "and3i":   (VT.REGISTER, VT.REGISTER, VT.UCONSTANT),
 
     "write":   (VT.MEMCOUNTER, VT.SIZE, VT.REGISTER),
     "call":    (VT.RADDRESS,),
@@ -94,7 +94,7 @@ asr_specs = {
     "return":  (),
 
     "xor3":    (VT.REGISTER, VT.REGISTER, VT.REGISTER),
-    "xor3i":   (VT.REGISTER, VT.REGISTER, VT.SCONSTANT),
+    "xor3i":   (VT.REGISTER, VT.REGISTER, VT.UCONSTANT),
 
     "asr3":    (VT.REGISTER, VT.REGISTER, VT.SHIFTVAL),
 

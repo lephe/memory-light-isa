@@ -1,0 +1,34 @@
+; Initialization (program input)
+    leti    r0 -1
+    leti    r1  1
+
+    leti r3 1
+    shift left r3 63
+
+    xor3    r2 r1 r0
+    and2i   r2 r3
+
+    leti    r3 0
+
+    cmpi    r1 0
+    jumpif  sgt multr1endshift
+    sub3    r1 r3 r1
+multr1endshift:
+
+    cmpi    r0 0
+    jumpif  sgt multr0endshift
+    sub3    r0 r3 r0
+multr0endshift:
+
+nonzero:
+    shift   right r0 1
+    jump    nc next
+    add2    r2 r1
+next:
+    shift   left r1 1
+    cmp     r0 0
+    jump    nz nonzero
+
+; Halt program (the emulator will detect this and avoid looping forever)
+    jump    -13
+

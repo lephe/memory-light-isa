@@ -48,7 +48,14 @@ class MemonicBackEnd(BackEnd):
     def handle_line(self, line):
         funcname, typed_args, linenumber = line
 
-        funcname = funcname + " "*(7-len(funcname))
+        if funcname in ["jumpl", "calll", "jumpifl"]:
+            funcname = funcname[:-1]
+
+        if funcname == "label":
+            self.out_queue.push(str(typed_args[0].raw_value) + ":")
+            return
+
+        funcname = " "*4 + funcname + " "*(7-len(funcname))
 
         realise_line = [funcname] + [("r" if x.typ is ValueType.REGISTER
                                       else "") + str(x.raw_value)
