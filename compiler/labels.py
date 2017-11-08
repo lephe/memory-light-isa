@@ -5,14 +5,17 @@ from .enums import Line
 
 class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
     bit_cost = {8: 9, 16: 18, 32: 35, 64: 67}
+    bit_prefix = {8: "0", 16: "10", 32: "110", 64: "111"}
 
     def get_fullcode(self):
         #  List containning (len, bitcode/jump/label)
-        fullcode = []
+        fullcode = [(0, "")]
+        # Not empty for special case with a call to a
+        # label in 0
+
         acc = ""
 
         for line in self.line_gene:
-            print(line)
             if line.funcname not in ("jumpl", "jumpifl", "calll", "label"):
                 CleartextBitcodeBackEnd.handle_line(self, line, space=False)
 
@@ -37,6 +40,8 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
                     fullcode.append((0, line))
 
                 acc = ""
+
+        fullcode.append((len(acc), acc))
 
         return fullcode
 
@@ -72,9 +77,11 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
                 if k in addr_values:
                     nb_bit = addr_values[k][0]
                     s += self.bit_cost[nb_bit]
-            return s
+            return -s
 
     def packets(self):
+
+        from pprint import pprint
 
         fullcode = self.get_fullcode()
 
@@ -106,14 +113,39 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
 
                     s = self.count_bytes(fullcode, addr_values, i, j)
 
-                    if s not in range(2**(nb_bit-1), 2**(nb_bit-1)):
+                    if s not in range(-2**(nb_bit-1), 2**(nb_bit-1)):
                         if nb_bit == 64:
-                            raise BackEndError("Too big jump")
+                            raise BackEndError("Jump too long")
                         addr_values[j] = (nb_bit * 2, s)
                         break
+                    else:
+                        addr_values[j] = (nb_bit, s)
+
+                if type(x) is Line and x.funcname is "calll":
+                    label = x.typed_args[0].raw_value
+
+                    if label not in label_dict:
+                        raise BackEndError("Undefined label")
+
+                    i = label_dict[label_dict]
+
+                    nb_bit, old_s = addr_values[j]
+
+                    s = self.count_bytes(fullcode, addr_values, i, 0)
+
+                    if s not in range(-2**(nb_bit-1), 2**(nb_bit-1)):
+                        if nb_bit == 64:
+                            raise BackEndError("Address too big")
+                        addr_values[j] = (nb_bit*2, s)
+                        break
+                    else:
+                        addr_values[j] = (nb_bit, s)
 
             else:
                 break
+
+        pprint(addr_values)
+        pprint(list(map(lambda x: x[0], fullcode)))
 
         endcode = []
         for i, (l, x) in enumerate(fullcode):
@@ -131,6 +163,23 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
                     cond = x.typed_args[0].raw_value
                     endcode.append(self.bin_condition(cond))
                 k, n = addr_values[i]
-                endcode.append(self.binary_repr(n, k, signed=True))
+                endcode.append(self.bit_prefix[k] + self.binary_repr(n, k, signed=True))
+                # print(endcode)
 
         return endcode
+
+
+class LabelsBinaryBackEnd(LabelsClearTextBackEnd):
+    write_mode = "wb"
+
+    def to_file(self, filename):
+        bitcode = "".join(self.packets())
+        bitcode = bitcode + "0"*((8-len(bitcode)) % 8)
+        q = len(bitcode)//8
+
+        with open(filename, self.write_mode) as f:
+            # f.write(q.to_bytes(8, byteorder="big"))
+            for k in range(q):
+                lul = "0b" + bitcode[8*k:8*(k+1)]
+                # print(bytes([int(lul, 2)]))
+                f.write(bytes([int(lul, 2)]))

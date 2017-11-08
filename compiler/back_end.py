@@ -82,7 +82,7 @@ class CleartextBitcodeBackEnd(BackEnd):
 
     def handle_line(self, line, space=None):
         if space is None:
-            if b in self.write_mode:
+            if "b" in self.write_mode:
                 space = False
             else:
                 space = True
