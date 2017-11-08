@@ -73,7 +73,7 @@ static void add2(cpu_t *cpu)
 {
 	uint rd = get(reg), rs = get(reg);
 
-	int carry = cpu->r[rd] > -cpu->r[rs];
+	int carry = cpu->r[rs] && (cpu->r[rd] >= -cpu->r[rs]);
 	cpu->r[rd] += cpu->r[rs];
 	set_flags(cpu, cpu->r[rd], carry);
 }
@@ -83,7 +83,7 @@ static void add2i(cpu_t *cpu)
 	uint rd = get(reg);
 	uint64_t cst = get(lconst, NULL);
 
-	int carry = cpu->r[rd] > -cst;
+	int carry = cst && cpu->r[rd] >= -cst;
 	cpu->r[rd] += cst;
 	set_flags(cpu, cpu->r[rd], carry);
 }
@@ -227,8 +227,9 @@ static void and2i(cpu_t *cpu)
 
 static void write(cpu_t *cpu)
 {
-//	uint ptr = get(pointer), size = get(size), rs = get(reg);
-	ifatal("cpu: write(): Not implemented");
+	uint ptr = get(pointer), size = get(size), rs = get(reg);
+	memory_write(cpu->mem, cpu->ptr[ptr], cpu->r[rs], size);
+
 	/* Let the debugger know about this memory change */
 	cpu->m = 1;
 }
@@ -244,6 +245,7 @@ static void setctr(cpu_t *cpu)
 {
 	uint ptr = get(pointer), rs = get(reg);
 	cpu->ptr[ptr] = cpu->r[rs];
+
 	/* Let the debugger know about this counter change */
 	cpu->t = 1;
 }
@@ -256,8 +258,14 @@ static void getctr(cpu_t *cpu)
 
 static void push(cpu_t *cpu)
 {
-//	uint size = get(size), rs = get(reg);
-	ifatal("cpu: push(): Not implemented");
+	uint size = get(size), rs = get(reg);
+	cpu->ptr[SP] -= size;
+
+	/* TODO: Use a proper exception when raising stack overflow */
+	if(cpu->ptr[SP] < cpu->mem->stack) fatal("Stack overflow (SP = %lu) "
+		"at PC = %lu\n", cpu->ptr[SP], cpu->ptr[PC]);
+	memory_write(cpu->mem, cpu->ptr[SP], cpu->r[rs], size);
+
 	/* Let the debugger know about this memory change */
 	cpu->m = 1;
 }
@@ -271,7 +279,7 @@ static void add3(cpu_t *cpu)
 {
 	uint rd = get(reg), rm = get(reg), rn = get(reg);
 	cpu->r[rd] = cpu->r[rm] + cpu->r[rn];
-	set_flags(cpu, cpu->r[rd], cpu->r[rm] > -cpu->r[rn]);
+	set_flags(cpu, cpu->r[rd], cpu->r[rn] && cpu->r[rm] >= -cpu->r[rn]);
 }
 
 static void add3i(cpu_t *cpu)
@@ -280,7 +288,7 @@ static void add3i(cpu_t *cpu)
 	uint64_t cst = get(lconst, NULL);
 
 	cpu->r[rd] = cpu->r[rs] + cst;
-	set_flags(cpu, cpu->r[rd], cpu->r[rs] > -cst);
+	set_flags(cpu, cpu->r[rd], cst && cpu->r[rs] >= -cst);
 }
 
 static void sub3(cpu_t *cpu)

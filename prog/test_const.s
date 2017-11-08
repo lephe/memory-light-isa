@@ -1,3 +1,6 @@
+; Testing constants and addresses of all sizes
+
+; ALU constants
 	leti	r0 1
 	leti	r0 -1
 
@@ -19,8 +22,7 @@
 	leti	r0 0x7fffffffffffffff
 	leti	r0 -0x8000000000000000
 
-
-
+; Addresses
 	call	1
 	call	-1
 

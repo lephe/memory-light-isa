@@ -114,7 +114,7 @@ int mem_at_end(memory_t *mem, uint64_t pc);
 /*
 	memory_read() -- read n bits from an address (up to 64)
 	Reads up to 64 bits from the given address. Data is returned in
-	big-endian format.
+	"big-endian order".
 
 	@arg	mem	Memory to read from
 	@arg	address	Address of the first bit to read
@@ -122,6 +122,16 @@ int mem_at_end(memory_t *mem, uint64_t pc);
 */
 uint64_t memory_read(memory_t *mem, uint64_t address, size_t n);
 
-/* TODO - emu:memory - add a function to write data to memory */
+/*
+	memory_write() -- write n bits to an address (up to 64)
+	Writes up to 64 bits to the given address. The lower bits of the given
+	value are used. They are supposed to be in "big-endian order".
+
+	@arg	mem	Memory to write to
+	@arg	address	Address of the first bit to overwrite
+	@arg	x	Variable containing raw data
+	@arg	n	Number of significant bits in x (at most 64)
+*/
+void memory_write(memory_t *mem, uint64_t address, uint64_t x, size_t n);
 
 #endif	/* MEMORY_H */

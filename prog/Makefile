@@ -6,5 +6,8 @@ obj = $(src:.s=.bin)
 all: $(obj)
 
 %.bin: %.s
-	sed '/[:]/ d' $< > /tmp/$<
-	../compileme -b /tmp/$< --output=$@
+	../compileme -b $< -o $@
+
+clean:
+	@ rm -f *.bin
+	@ rm -f *.debug

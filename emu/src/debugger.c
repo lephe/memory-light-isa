@@ -98,9 +98,11 @@ static void debugger_help(int argc, char **argv)
 	}
 }
 
-static void debugger_step(void)
+static void debugger_step(int argc, char **argv)
 {
-	cpu_execute(debugger_cpu);
+	int steps = (argc >= 2) ? atoi(argv[1]) : 1;
+
+	while(steps--) cpu_execute(debugger_cpu);
 
 	/* FIXME - We don't need to refresh the code panel now if
 	   1. We are not following PC
@@ -157,7 +159,7 @@ static void draw_reg(void)
 
 	/* Memory pointers */
 
-	const char *ptrs[] = { "PC", "PR", "A0", "A1" };
+	const char *ptrs[] = { "PC", "SP", "A0", "A1" };
 	for(size_t i = 0; i < 4; i++)
 		mvwprintw(wreg, 2 + i, 3, "%s  %08x", ptrs[i], cpu->ptr[i]);
 
@@ -169,7 +171,7 @@ static void draw_reg(void)
 	/* Processor flags */
 
 	mvwprintw(wreg, 16, 3, "Flags:");
-	mvwprintw(wreg, 17, 3, "Z=%d C=%d N=%d", cpu->z, cpu->c, cpu->z);
+	mvwprintw(wreg, 17, 3, "Z=%d N=%d C=%d", cpu->z, cpu->n, cpu->c);
 
 	wrefresh(wreg);
 }
@@ -324,7 +326,7 @@ void debugger(const char *filename, cpu_t *cpu)
 		/* Call the associated function */
 		if(!strcmp(argv[0], "help")) debugger_help(argc, argv);
 		else if(!strcmp(argv[0], "q")) break;
-		else if(!strcmp(argv[0], "s")) debugger_step();
+		else if(!strcmp(argv[0], "s")) debugger_step(argc, argv);
 		else dbgerr("unknown command '%s'\n", argv[0]);
 	}
 

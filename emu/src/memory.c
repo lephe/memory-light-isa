@@ -60,8 +60,13 @@ void memory_load(memory_t *mem, const char *filename)
 	fseek(fp, 0, SEEK_SET);
 
 	/* Check that it fits into memory */
-	if(8 * size > mem->stack) error("program is too large to fit in the "
-		"code/stack segment (%d > %d)", size, mem->stack);
+	if(8 * size > mem->stack)
+	{
+		error("program is too large to fit in the code/stack segment "
+			"(%d > %d)", 8 * size, mem->stack);
+		note("you may want to change the memory geometry using "
+			"--memory-size and --stack-addr");
+	}
 
 	/* Read the data and close the file */
 	else
@@ -123,10 +128,9 @@ uint64_t memory_read(memory_t *mem, uint64_t address, size_t n)
 	if(!mem) ifatal("memory_read(): NULL memory");
 	if(n > 64) fatal("memory_read(): Too much data requested (%u > 64)",n);
 
-	/* TODO - Use an event queue (or sth like that) to set up a properly-
-	   managed exception system for the debugger */
+	/* TODO: memory_read() - use an exception when out of bounds */
 	if(address + n > mem->memsize) fatal("memory_read(): Out of bounds "
-		"(%x/%u > %x)", address, n, mem->memsize);
+		"(%x:%u > %x)", address, n, mem->memsize);
 
 	uint64_t base = address >> 6;
 	int right = (address & 63) + n;
@@ -151,5 +155,50 @@ uint64_t memory_read(memory_t *mem, uint64_t address, size_t n)
 		w2 = w2 >> (64 - right);
 
 		return (w1 << right) | w2;
+	}
+}
+
+/* memory_write() -- write n bits to an address (up to 64) */
+/* TODO: Check that this function actually works */
+void memory_write(memory_t *mem, uint64_t address, uint64_t x, size_t n)
+{
+	/* Sanity checks */
+	if(!mem) ifatal("memory_write(): NULL memory");
+	if(n > 64)fatal("memory_write(): Too much data requested (%u > 64)",n);
+
+	/* TODO: memory_write() - use an exception when out of bounds */
+	if(address + n > mem->memsize) fatal("memory_write: Out of bounds "
+		"(%x:%u > %x)", address, n, mem->memsize);
+
+	/* Remove additional unwanted bits */
+	x &= (1ul << n) - 1;
+
+	uint64_t base = address >> 6;
+	int right = (address & 63) + n;
+
+	/* If the target area is on a single 64-bit word, write it in one go */
+	if(right <= 64)
+	{
+		right = 64 - right;	/* Number of free bits at the right */
+
+		uint64_t word = htobe64(mem->mem[base]);
+		uint64_t mask = ((1ul << n) - 1) << right;
+
+		word = (word & ~mask) | (x << right);
+		mem->mem[base] = be64toh(word);
+	}
+
+	/* Otherwise, proceed in two steps */
+	else
+	{
+		uint64_t w1 = htobe64(mem->mem[base]);
+		uint64_t w2 = htobe64(mem->mem[base + 1]);
+		right -= 64;
+
+		w1 = (w1 & ~((1ul << (n - right)) - 1)) | (x >> right);
+		w2 = ((w2 << right) >> right) | (x << (64 - right));
+
+		mem->mem[base]     = be64toh(w1);
+		mem->mem[base + 1] = be64toh(w2);
 	}
 }

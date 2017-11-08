@@ -25,7 +25,7 @@ void error_msg(error_t level, const char *format, ...)
 	}
 
 	/* Indicate the type of message with a bit of coloring */
-	if(level > 0 && level <= 5)
+	if(level >= 0 && level <= 5)
 	{
 		const char *strs[] = {
 			"note: ", "warning: ", "error: ", "internal error: ",

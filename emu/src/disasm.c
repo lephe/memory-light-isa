@@ -117,7 +117,7 @@ int64_t disasm_aconst(memory_t *mem, uint64_t *ptr, uint *size_arg)
 	uint64_t cst = disasm_lconst(mem, ptr, &size);
 	if(size_arg) *size_arg = size;
 
-	return sign_extend(cst, size);
+	return (size > 1) ? sign_extend(cst, size) : (int64_t)cst;
 }
 
 /* disasm_shift() -- read a shift constant */
