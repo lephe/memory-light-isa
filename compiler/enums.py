@@ -20,6 +20,7 @@ class LexType(enum.Enum):
     COMMENT = enum.auto()
     NEWLINE = enum.auto()
     ENDFILE = enum.auto()
+    INCLUDE = enum.auto()
     NUMBER = enum.auto()
     LABEL = enum.auto()
     SKIP = enum.auto()

@@ -13,19 +13,24 @@ class Lexer(object):
 
     def __init__(self):
         token_specification = {
+
+
             # Operators
-            LexType.OPERATION: 'add|sub|cmp|let|shift|readze|readse|jump|' + \
-                               'or|and|write|call|setctr|getctr|push|' +     \
-                               'return|xor|asr|pop',
+            LexType.OPERATION: r'\b(?:add|sub|cmp|let|shift|readze|readse|jump|' + \
+                               r'or|and|write|call|setctr|getctr|push|' +     \
+                               r'return|xor|asr|pop)\b',
 
             # Values
-            LexType.REGISTER:   r'(?:r|R)[0-9]+',
-            LexType.DIRECTION:  r'left|right',
-            LexType.NUMBER:     r'[+-]?(?:0x[0-9A-Fa-f]+|[0-9]+)',
+            LexType.REGISTER:   r'\b(?:r|R)[0-9]+\b',
+            LexType.DIRECTION:  r'\bleft|right\b',
+            LexType.NUMBER:     r'[+-]?\b(?:0x[0-9A-Fa-f]+|[0-9]+)\b',
             LexType.COMMENT:    r';.*',
-            LexType.CONDITION:  r'eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le',
-            LexType.MEMCOUNTER: r'pc|sp|a0|a1',
-            LexType.LABEL:      r'[a-zA-Z][a-zA-Z0-9]*:?',
+            LexType.CONDITION:  r'\beq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le\b',
+            LexType.MEMCOUNTER: r'\bpc|sp|a0|a1\b',
+
+            # LABELS/IMPORTS
+            LexType.LABEL:      r'\b[a-zA-Z_][a-z_A-Z0-9]*:?',
+            LexType.INCLUDE:    r'\.include [a-zA-z_][a-z_A-Z0-9]*\b',
 
             # Tokenizer stuff
             LexType.NEWLINE:  r'\n',
@@ -77,6 +82,9 @@ class Lexer(object):
                 column = match.start() - line_start
                 # yield Token(LexType.OPERATION, "label", line_num, column)
                 yield Token(LexType.LABEL, value, line_num, column)
+
+            elif kind is LexType.INCLUDE:
+                raise NotImplementedError()
 
             else:
                 column = match.start() - line_start
