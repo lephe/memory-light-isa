@@ -102,16 +102,6 @@ void memory_destroy(memory_t *mem);
 //---
 
 /*
-	mem_at_end() -- check whether the end of the text segment is reached
-	Returns non-zero if no more instruction can be read from the given
-	program counter without overrunning the text segment.
-	This function exists because of the necessity to properly handle
-	byte-padding at the end of the binary file, and the influence of the
-	dynamic Huffman encoding on this detection.
-*/
-int mem_at_end(memory_t *mem, uint64_t pc);
-
-/*
 	memory_read() -- read n bits from an address (up to 64)
 	Reads up to 64 bits from the given address. Data is returned in
 	"big-endian order".

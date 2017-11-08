@@ -162,7 +162,7 @@ static void debugger_disasm(uint64_t ptr)
 		copy = ptr;
 
 		/* Leave if we've reached the end of the text segment */
-		if(mem_at_end(debugger_mem, ptr)) break;
+		if(ptr >= debugger_mem->text) break;
 
 		/* Get an opcode from the current program counter */
 		disasm_opcode(debugger_mem, &ptr, &format);

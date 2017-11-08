@@ -59,6 +59,10 @@ void memory_load(memory_t *mem, const char *filename)
 	unsigned long size = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 
+	/* Remember that there is an 8-byte header at the beginning */
+	uint64_t header_text;
+	size -= 8;
+
 	/* Check that it fits into memory */
 	if(8 * size > mem->stack)
 	{
@@ -71,18 +75,15 @@ void memory_load(memory_t *mem, const char *filename)
 	/* Read the data and close the file */
 	else
 	{
-		size_t blocks = fread(mem->mem, size, 1, fp);
-		if(blocks < 1) error("# cannot read from '%s'", filename);
+		size_t b1 = fread(&header_text, 8, 1, fp);
+		size_t b2 = fread(mem->mem, size, 1, fp);
+		if(b1 < 1 || b2 < 1) error("# cannot read from '%s'",filename);
 	}
 	fclose(fp);
 	error_check();
 
-	/* Finally, set the length of the text section. This is not the actual
-	   program size because there may be padding at the end of the file. It
-	   is not possible to determine from here whether there is padding or
-	   not because of the variable-length design of the binary code, so we
-	   leave this trouble to the CPU and debugger modules */
-	mem->text = 8 * size;
+	/* Set the length of the text section in the memory object */
+	mem->text = be64toh(header_text);
 }
 
 /* memory_destroy() -- free a memory_t object allocated by memory_new() */
@@ -100,26 +101,6 @@ void memory_destroy(memory_t *mem)
 //---
 //	Data access
 //---
-
-/* mem_at_end() -- check whether the end of the text segment is reached */
-#include <string.h>
-#include <disasm.h>
-int mem_at_end(memory_t *mem, uint64_t pc)
-{
-	/* TODO - This sould use a segment size indicator from the file */
-
-	/* There may not be more that 7 bits padding */
-	if(pc < mem->text - 7) return 0;
-
-	/* No instruction fits in 6 bits, so we can rule these cases out */
-	if(pc >= mem->text - 6) return 1;
-
-	/* Now there are some instructions that are exactly 7 bits long, but
-	   they have no parameters. Let's check this */
-	const char *format;
-	disasm_opcode(mem, &pc, &format);
-	return !!strncmp(format, "---", 3);
-}
 
 /* memory_read() -- read n bits from an address (up to 64) */
 uint64_t memory_read(memory_t *mem, uint64_t address, size_t n)

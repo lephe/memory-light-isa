@@ -130,7 +130,7 @@
 	or2	r1 r0
 	; CHECK r1 = 14, zero clear, negative clear
 
-	or2i	r0 -1
+	or2i	r0 0xff
 	; CHECK r0 = 0xff, zero clear, negative clear
 
 	let	r4 -1
@@ -141,7 +141,7 @@
 	and2	r1 r0
 	; CHECK r1 = 6, zero clear, negative clear
 
-	and2i	r0 -6
+	and2i	r0 0xfa
 	; CHECK r0 = 2, zero clear, negative clear
 
 	and2i	r1 128
@@ -151,24 +151,26 @@
 ; This section assumes that your program is loaded at address 0 (ie. the
 ; address of the first instruction is 0).
 
-	; Main function, calls sub 1
+main:
 	; If you know the address of the jump below, keep it in mind
 	leti	r0 0
-	call	0x4dc
+	call	0x4cc
 	add2i	r0 100
-
 	; CHECK r0 = 112
-	jump	0x5a
 
+	jump	0x6c
+
+func1:
 	; Sub-function 1, calls sub 2 twice then returns
 	; CHECK r7 = address of the jump above
 	let	r5 r7
 	add2i	r0 10
-	call	0x526
-	call	0x526
+	call	0x528
+	call	0x528
 	let	r7 r5
 	return
 
+func2:
 	; Sub-function 2
 	add2i	r0 1
 	return
@@ -212,7 +214,7 @@
 	or3	r4 r4 r5
 	; CHECK r4 = 79, zero clear, negative clear
 
-	or3i	r4 r4 -1
+	or3i	r4 r4 0xff
 	; CHECK r4 = 0xff, zero clear, negative clear
 
 	leti	r7 -1
