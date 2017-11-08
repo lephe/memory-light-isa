@@ -58,7 +58,7 @@ asr_specs = {
     "sub3i":   (VT.REGISTER, VT.REGISTER, VT.UCONSTANT),
 
     "cmp":     (VT.REGISTER, VT.REGISTER),
-    "cmpi":    (VT.REGISTER, VT.UCONSTANT),
+    "cmpi":    (VT.REGISTER, VT.SCONSTANT),
 
     "let":     (VT.REGISTER, VT.REGISTER),
     "leti":    (VT.REGISTER, VT.SCONSTANT),
