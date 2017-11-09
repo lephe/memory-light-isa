@@ -22,14 +22,14 @@ class Lexer(object):
 
             # Values
             LexType.REGISTER:   r'\b(?:r|R)[0-9]+\b',
-            LexType.DIRECTION:  r'\bleft|right\b',
+            LexType.DIRECTION:  r'\b(?:left|right)\b',
             LexType.NUMBER:     r'[+-]?\b(?:0x[0-9A-Fa-f]+|[0-9]+)\b',
             LexType.COMMENT:    r';.*',
-            LexType.CONDITION:  r'\beq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le\b',
-            LexType.MEMCOUNTER: r'\bpc|sp|a0|a1\b',
+            LexType.CONDITION:  r'\b(?:eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le)\b',
+            LexType.MEMCOUNTER: r'\b(?:pc|sp|a0|a1)\b',
 
             # LABELS/IMPORTS
-            LexType.LABEL:      r'\b[a-zA-Z_][a-z_A-Z0-9]*:?',
+            LexType.LABEL:      r'\b[a-zA-Z_][a-z_A-Z0-9]*:?\b',
             LexType.INCLUDE:    r'\.include [a-zA-z_][a-z_A-Z0-9]*\b',
 
             # Tokenizer stuff
