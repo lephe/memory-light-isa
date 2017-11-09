@@ -29,7 +29,7 @@ class Lexer(object):
             LexType.MEMCOUNTER: r'\b(?:pc|sp|a0|a1)\b',
 
             # LABELS/IMPORTS
-            LexType.LABEL:      r'\b[a-zA-Z_][a-z_A-Z0-9]*:?\b',
+            LexType.LABEL:      r'\b[a-zA-Z_][a-z_A-Z0-9]*:?',
             LexType.INCLUDE:    r'\.include [a-zA-z_][a-z_A-Z0-9]*\b',
 
             # Tokenizer stuff
