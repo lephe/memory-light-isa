@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """ Some utilities for the lexer/parser """
 import collections
 import re

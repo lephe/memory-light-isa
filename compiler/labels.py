@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from .errors import BackEndError, ImpossibleError
 from .back_end import CleartextBitcodeBackEnd, BinaryBitcodeBackEnd
 from .enums import Line
@@ -17,13 +18,13 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
 
         for line in self.line_gene:
             if line.funcname not in ("jumpl", "jumpifl", "calll", "label"):
-                CleartextBitcodeBackEnd.handle_line(self, line, space=False)
+                CleartextBitcodeBackEnd.handle_line(self, line)
 
                 while not self.out_queue.is_empty():
-                    acc += self.out_queue.pop()
+                    acc += self.out_queue.pop() + "\n"
 
             else:
-                fullcode.append((len(acc), acc))
+                fullcode.append((len("".join(acc.split())), acc))
 
                 if line.funcname is "label":
                     bitcode = ""
@@ -156,15 +157,16 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
 
             # x.funcname is "jumpl" or "jumpifl" or "call"
             elif type(x) is Line:
-                bitcode = self.huffman_tree[x.funcname[:-1]]
+                bitcode = f" {self.huffman_tree[x.funcname[:-1]]}"
 
                 endcode.append(bitcode)
                 if x.funcname is "jumpifl":
                     cond = x.typed_args[0].raw_value
-                    endcode.append(self.bin_condition(cond))
+                    endcode.append(f" {self.bin_condition(cond)}")
                 k, n = addr_values[i]
-                endcode.append(self.bit_prefix[k] + self.binary_repr(n, k, signed=True))
-                # print(endcode)
+                endcode.append(f" {self.bit_prefix[k] + self.binary_repr(n, k, signed=True)}")
+        
+        print(endcode)
 
         return endcode
 
@@ -173,7 +175,7 @@ class LabelsBinaryBackEnd(LabelsClearTextBackEnd):
     write_mode = "wb"
 
     def to_file(self, filename):
-        bitcode = "".join(self.packets())
+        bitcode = "".join(["".join(x.split()) for x in self.packets()])
         text_size = len(bitcode)
         bitcode = bitcode + "0"*((8-len(bitcode)) % 8)
         q = len(bitcode)//8

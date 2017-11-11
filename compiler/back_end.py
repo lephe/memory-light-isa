@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from .util import Queue
 from .errors import BackEndError
 from .enums import NB_BIT_REG, ValueType

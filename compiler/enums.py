@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import enum
 import collections
 import math
