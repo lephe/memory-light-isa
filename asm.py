@@ -40,7 +40,7 @@ if __name__ == "__main__":
                                help="Clear text with labels")
     group_backend.add_argument("-b", "--binary", action="store_const",
                                dest="back_end", const=LabelsBinaryBackEnd,
-                               help="Clear text with labels")
+                               help="Output in binary with labels")
 
     parser.add_argument('--huffman', action="store_true",
                         help="generate the huffman tree")
