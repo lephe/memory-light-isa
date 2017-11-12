@@ -5,7 +5,7 @@
 ; Initialization (program input)
 	leti	r0 -0x538ba20c467c034b
 	leti	r1 0x6527dbd63
-	; Note this is signed 64/64 division, r0 / r1 = 0xffffffff'f2c9133c
+	; Negative 64 / Positive 64 division, r0 / r1 = 0xffffffff'f2c9133c
 
 ; Main program (r2 = r0 / r1)
 	leti	r2 0
@@ -50,7 +50,7 @@ shft:
 
 ; Then we remove the divisor from the dividend when possible, and we shift
 ; right before trying again. This loop runs exactly 63 - lg(r1) times.
-; The size of this loop is 80 bytes.
+; The size of this loop is 80 bits.
 nonzero:
 	; If r1 >= r0, increase result and decrease r1
 	cmp	r0 r1

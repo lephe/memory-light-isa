@@ -5,7 +5,7 @@
 ; Initialization (program input)
 	leti	r0 -0x374bc563deb482
 	leti	r1 0x97b6af21f376
-	; r0 * r1 = 0xffffffdf'3ad8dfa1'591295b1'6f3f6614
+	; r0 * r1 = 0xffffffdf'3ad8dfa1'591295b1'6f3f6614 (negative)
 
 ; Main program ([r3r2] = r0 * [r6r1])
 	leti	r2 0
@@ -27,6 +27,7 @@ r0_positive:
 r1_positive:
 
 ; Calculate the product!
+; The size of this loop is 149 bits.
 loop:
 	shift	right r0 1
 	jumpif	nc next

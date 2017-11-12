@@ -1,3 +1,4 @@
+; WARNING: THIS PROGRAM IS NOT COMPATIBLE WITH THE ISA ANYMORE!
 ; Comprehensive instruction testing. Execute the program step-by-step and check
 ; the values of registers, PC, and flags when suggested.
 ; Untested instructions: readze, readse, write, push

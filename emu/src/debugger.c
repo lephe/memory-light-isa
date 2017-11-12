@@ -217,7 +217,7 @@ static void draw_stack(void)
 	mvwaddstr(wstack, 0, 1, " Stack state ");
 	wattroff(wstack, A_BOLD);
 
-	/* Some colors, since there's nothing on the stack for now */
+	/* Some colors, since there's nothing on the stack for now
 
 	mvwaddstr(wstack, 2, 3, "Color set:");
 	for(int i = 0; i < 8; i++)
@@ -228,7 +228,9 @@ static void draw_stack(void)
 		wattron(wstack, A_DIM);
 		waddstr(wstack, "color  ");
 		wattroff(wstack, COLOR_PAIR(i) | A_DIM);
-	}
+	} */
+
+	mvwaddstr(wstack, 2, 3, "Not available (TODO)");
 
 	wrefresh(wstack);
 }
