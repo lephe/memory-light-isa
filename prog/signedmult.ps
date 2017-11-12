@@ -1,25 +1,36 @@
-; Initialization (program input)
-    leti    r0 -1
-    leti    r1  1
+    ; Initialization of the values.
+    leti    r0 02138213
+    leti    r1 1242748123
 
+    
+
+    ; We can store the sign bit here. We assume here that r0 * r1 is signed
+    ; and stay on 64 bits. So it's signed value stays on 63 bits.
+    ; r3 = 0x8000000000000000
     leti r3 1
     shift left r3 63
 
+
+    ; Getting the sign on the result. 
     xor3    r2 r1 r0
     and2i   r2 r3
 
+    ; To do sub r1 0 r1 (taking the negative value.)
     leti    r3 0
 
-    cmpi    r1 0
-    jumpif  sgt multr1endshift
-    sub3    r1 r3 r1
-multr1endshift:
-
+    ; r0 = |r0|
     cmpi    r0 0
-    jumpif  sgt multr0endshift
+    jumpif  sgt r0_is_positive
     sub3    r0 r3 r0
-multr0endshift:
+r0_is_positive:
 
+    ; r1 = |r1|
+    cmpi    r1 0
+    jumpif  sgt r1_is_positive
+    sub3    r1 r3 r1
+r1_is_positive:
+
+    ; Processing multiplication of two positives integers.
 nonzero:
     shift   right r0 1
     jump    nc next
@@ -29,6 +40,13 @@ next:
     cmp     r0 0
     jump    nz nonzero
 
-; Halt program (the emulator will detect this and avoid looping forever)
-    jump    -13
 
+    ; Ajusting the sign of the result.
+    cmpi    r2 0
+    jumpif  sgt multr2endshift
+    sub3    r2 r3 r2
+multr2endshift:
+
+    ; End of the programm.
+halt:
+    jump    halt
