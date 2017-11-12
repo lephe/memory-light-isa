@@ -3,12 +3,12 @@
 Les programmes demandés sont dans /prog. Comme nos registres font 64 bits, les
 tailles ont été ajustées. On trouve donc :
 
-  mult.s     Multiplication non signée 64 × 64 → 64 bits
-/*muls.ps    Multiplication signée 64 × 64 → 64 bits*/
-  mull.s     Multiplication signée 64 × 64 → 128 bits
-  div.s      Division signée 64 / 64 → 64 bits
-  test_*     Des tests sans rapport avec le rendu
-  Makefile   Compile tout (au format binaire) sans se casser la tête
+    mult.s     Multiplication non signée 64 × 64 → 64 bits
+    /* muls.ps    Multiplication signée 64 × 64 → 64 bits */
+    mull.s     Multiplication signée 64 × 64 → 128 bits
+    div.s      Division signée 64 / 64 → 64 bits
+    test_*     Des tests sans rapport avec le rendu
+    Makefile   Compile tout (au format binaire) sans se casser la tête
 
 (Les programmes en .ps utilisent une syntaxe plus libre qui laisse l'assembleur
  se débrouiller pour déterminer quel opcode il doit utiliser.)
