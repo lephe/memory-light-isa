@@ -190,8 +190,6 @@ int main(int argc, char **argv)
 	if(argc == 1 || opt.help) help((const char **)argv);
 	if(!opt.filename) fatal("no input file");
 
-	if(!opt.debugger)
-		fatal("cannot honor run mode x_x (TODO)");
 	if(opt.graphical)
 		fatal("cannot honor graphical mode x_x (TODO)");
 
@@ -202,8 +200,17 @@ int main(int argc, char **argv)
 	/* Create a CPU and give it the memory */
 	cpu = cpu_new(mem);
 
-	/* Start the debugger. It's show time! */
-	debugger(opt.filename, cpu);
+	/* It's show time! */
+
+	if(!opt.debugger)
+	{
+		while(cpu->ptr[PC] < mem->text && !cpu->h)
+			cpu_execute(cpu);
+
+		puts("At end of execution:");
+		cpu_dump(cpu, stdout);
+	}
+	else debugger(opt.filename, cpu);
 
 	return 0;
 }

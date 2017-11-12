@@ -20,6 +20,9 @@ WINDOW *wcli		= NULL;		/* Debugger console */
 cpu_t *debugger_cpu	= NULL;		/* Debugged CPU */
 memory_t *debugger_mem	= NULL;		/* Debugged memory */
 
+/* Execution state */
+debugger_state_t debugger_state = state_idle;
+
 static void draw_reg(void);
 static void draw_stack(void);
 
@@ -36,12 +39,12 @@ static void draw_stack(void);
 
 static const char *help_string =
 "Available commands:\n"
-"  s    Step next instruction\n"
-"  b    Manage breakpoints (try 'help b')\n"
-"  r    Run until breakpoint, halt or end of program\n"
-"  d    Disassemble program (try 'help d')\n"
-"  q    Quit debugger\n";
-static const char *help_string_b =
+"  s <n>   Step <n> instructions (default 1)\n"
+//"  b       Manage breakpoints (try 'help b')\n"
+"  r       Run until breakpoint, halt or end of program\n"
+//"  d       Disassemble program (try 'help d')\n"
+"  q       Quit debugger\n";
+/*static const char *help_string_b =
 "Manage breakpoints:\n"
 "  b           Show all configured breakpoints\n"
 "  b <addr>    Add a breakpoint at the given address\n"
@@ -50,6 +53,7 @@ static const char *help_string_d =
 "Disassemble program:\n"
 "  d           Disassemble at PC and follow PC during execution\n"
 "  d <addr>    Disassemble the given location and stay there when PC moves\n";
+*/
 
 /* TODO - Show any memory, show stack, change program state, more? */
 
@@ -87,22 +91,27 @@ static void debugger_help_log(const char *str)
 	debugger_help()
 	Provide help about a few predefined topics.
 */
-static void debugger_help(int argc, char **argv)
+static void debugger_help(int argc, __attribute__((unused)) char **argv)
 {
 	if(argc == 1) debugger_help_log(help_string);
 
-	for(int i = 1; i < argc; i++)
+/*	for(int i = 1; i < argc; i++)
 	{
 		if(!strcmp(argv[i], "b")) debugger_help_log(help_string_b);
 		if(!strcmp(argv[i], "d")) debugger_help_log(help_string_d);
 	}
+*/
 }
 
 static void debugger_step(int argc, char **argv)
 {
 	int steps = (argc >= 2) ? atoi(argv[1]) : 1;
 
-	while(steps--) cpu_execute(debugger_cpu);
+	while(debugger_cpu->ptr[PC] < debugger_mem->text && steps--)
+	{
+		cpu_execute(debugger_cpu);
+		if(debugger_cpu->h) break;
+	}
 
 	/* FIXME - We don't need to refresh the code panel now if
 	   1. We are not following PC
@@ -113,15 +122,32 @@ static void debugger_step(int argc, char **argv)
 	draw_stack();
 
 	/* TODO - Set the halt status on cpu->h */
+	if(debugger_cpu->h) debugger_state = state_halt;
 }
 
-static void debugger_break(void)
+/* static void debugger_break(void)
 {
-}
+} */
 
 static void debugger_run(void)
 {
 	/* Check if CPU is at end of text section */
+	while(debugger_cpu->ptr[PC] < debugger_mem->text)
+	{
+		cpu_execute(debugger_cpu);
+		if(debugger_cpu->h) break;
+	}
+
+	/* FIXME - We don't need to refresh the code panel now if
+	   1. We are not following PC
+	   2. PC was not, and is still not, visible in the current area */
+	debugger_code();
+
+	draw_reg();
+	draw_stack();
+
+	/* TODO - Set the halt status on cpu->h */
+	if(debugger_cpu->h) debugger_state = state_halt;
 }
 
 //---
@@ -327,6 +353,7 @@ void debugger(const char *filename, cpu_t *cpu)
 		if(!strcmp(argv[0], "help")) debugger_help(argc, argv);
 		else if(!strcmp(argv[0], "q")) break;
 		else if(!strcmp(argv[0], "s")) debugger_step(argc, argv);
+		else if(!strcmp(argv[0], "r")) debugger_run();
 		else dbgerr("unknown command '%s'\n", argv[0]);
 	}
 

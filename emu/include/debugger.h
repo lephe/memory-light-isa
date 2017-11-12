@@ -44,6 +44,21 @@ extern cpu_t *debugger_cpu;
 extern memory_t *debugger_mem;
 
 /*
+	debugger_state_t enumeration
+	Different states of execution for the debugged program.
+*/
+typedef enum
+{
+	state_idle	= 0,	/* Program is ready to run */
+	state_break	= 1,	/* Program has reached breakpoint */
+	state_halt	= 2,	/* Program has reached end or infinite loop */
+
+} debugger_state_t;
+
+/* Current execution state */
+extern debugger_state_t debugger_state;
+
+/*
 	debugger_color_t enumeration
 	This enumeration lists all the colors used by the application. Only the
 	8 basic VGA colors are used (others begin unsupported most of the
@@ -66,6 +81,8 @@ typedef enum
 	color_command	= color_cyan,
 	color_error	= color_red,
 	color_idle	= color_yellow,
+	color_break	= color_red,
+	color_halt	= color_green,
 
 	/* Disassembler */
 	color_arithm	= color_white,

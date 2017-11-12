@@ -392,6 +392,22 @@ static void (*instructions[37])(cpu_t *cpu) = {
 	res_2,
 };
 
+/* cpu_dump() -- print CPU state to a stream */
+void cpu_dump(cpu_t *cpu, FILE *stream)
+{
+	if(stream && !cpu) fputs("<null cpu>", stream);
+	if(!stream || !cpu) return;
+
+	fprintf(stream, "r0 = %016lx    PC = %08lx\n", cpu->r[0],cpu->ptr[PC]);
+	fprintf(stream, "r1 = %016lx    SP = %08lx\n", cpu->r[1],cpu->ptr[SP]);
+	fprintf(stream, "r2 = %016lx    A0 = %08lx\n", cpu->r[2],cpu->ptr[A0]);
+	fprintf(stream, "r3 = %016lx    A1 = %08lx\n", cpu->r[3],cpu->ptr[A1]);
+	fprintf(stream, "r4 = %016lx\n", cpu->r[4]);
+	fprintf(stream, "r5 = %016lx    Z = %d\n", cpu->r[5], cpu->z);
+	fprintf(stream, "r6 = %016lx    N = %d\n", cpu->r[6], cpu->z);
+	fprintf(stream, "r7 = %016lx    C = %d\n", cpu->r[7], cpu->c);
+}
+
 /* cpu_execute() -- read an execute an instruction */
 void cpu_execute(cpu_t *cpu)
 {

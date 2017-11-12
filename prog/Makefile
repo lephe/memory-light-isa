@@ -6,7 +6,7 @@ obj = $(src:.s=.bin)
 all: $(obj)
 
 %.bin: %.s
-	../compileme -b $< -o $@
+	../asm.py -b $< -o $@
 
 clean:
 	@ rm -f *.bin

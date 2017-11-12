@@ -76,8 +76,9 @@ void memory_load(memory_t *mem, const char *filename)
 	else
 	{
 		size_t b1 = fread(&header_text, 8, 1, fp);
+		if(b1 < 1) error("# cannot read from '%s'",filename);
 		size_t b2 = fread(mem->mem, size, 1, fp);
-		if(b1 < 1 || b2 < 1) error("# cannot read from '%s'",filename);
+		if(b2 < 1) error("# cannot read from '%s'",filename);
 	}
 	fclose(fp);
 	error_check();

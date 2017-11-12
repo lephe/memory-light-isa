@@ -1,9 +1,9 @@
 # Remarques sur le jeu d'instructions
 
-On a essayé de les faire aussi constructives que possible. Voilà en gros de
-quoi ça parle :
+On a essayé de les faire aussi constructives que possible, du coup c'est un peu
+long (désolé pour ça). Voilà en gros de quoi il s'agit :
 
-- Des combinaisons inutilisées de `shift`
+- Les fonctions de calcul de base
 - L'absence de décalage de bits dynamique
 - Le choix de `addi` et `subi` non-signés
 - Le bit de direction de `shift`
@@ -11,18 +11,34 @@ quoi ça parle :
 
 
 
-## Des combinaisons inutilisées de `shift`
+## Les fonctions de calcul de base
 
-Il y a deux cas de paramètres pour `shift` qui sont utilisés, à savoir les cas
-où `shiftval` est représenté en binaire par `0_000000` ou `0_000001` :
+Ça n'en a pas l'air à première vue, mais il y a pas mal de calculs/opérations
+qu'on devrait pouvoir faire en deux lignes maximum et qui sont contraignantes à
+réaliser. On peut citer par exemple :
 
-- Le premier parce qu'un décalage de 0 bit est inutile ;
-- Le second parce que la valeur 1 est représentée par `1`.
+- L'opposé (leti puis sub3i, nécessite un nouveau registre)
+- La valeur absolue (cmpi, jumpif, puis calcul de l'opposé)
+- L'addition et la soustraction avec carry (nécessite des jumpif c/nc), connus
+  pour les opérations sur des doubles registres, ici la multiplication complète
+  de deux registres 64 × 64 → 128
+- Le complémentaire binaire (leti puis xor3, nouveau registre requis)
+- Le décalage de bits universel (celui-là est bien catastrophique, voir après)
+- Des instructions pour lire/écrire les flags (nécessite des paquets de jumpif)
+- Lire des pointeurs sans les modifier (read*, getctr, subi, setctr si on n'a
+  pas une copie clean dans un registre)
+- Un saut universel (marche avec setctr pc rn, mais au moins mettre un alias)
 
-Ce qui laisse deux séquences inutilisées dans chaque direction. Il serait
-clairement difficile de les exploiter pour faire autre chose compte tenu des
-changements compliqués à faire dans le circuit, mais il est intéressant de
-mentionner les rotations, qui n'ont pas été ajoutées au jeu d'instructions.
+À côté de ça, on a beaucoup de doublons sur des instructions à trois opérandes,
+qui permettent certes de compacter le code dans certaines situations, mais qui
+ne compensent probablement pas la complexité des opérations ci-dessus.
+
+D'ailleurs, il convient de noter que l'opposé, la valeur absolue, l'addition et
+la soustraction avec carry, ainsi que l'accès direct aux flags nécessitent tous
+des sauts supplémentaires, ce que la pipeline n'appréciera probablement pas.
+
+Donc, utiliser les opcodes pour faire des opérations supplémentaires au lieu
+de surcharger celles qui existent serait certainement plus stratégique.
 
 
 
@@ -38,7 +54,7 @@ pas de multiplication simple, il faudrait au moins une chaîne additive pour
 faire ce calcul, et celle de 22 est longue (du genre 1→2→4→5→10→11→22).
 
 Et bien entendu ça ne marche que pour un registre cible et un registre source
-particuliers, il faut encore se taper tous les transferts pour en arriver là.
+particuliers, il faut encore se coltiner tous les transferts pour l'utiliser.
 Et ça ne permet pas de changer le sens du shift si `r1` est négatif. Bref...
 alors que dans l'autre sens, c'est nettement plus trivial pour implémenter le
 shift constant à partir du dynamique :
@@ -77,6 +93,11 @@ Je ne vois pas de cas particulier qui puisse justifie que les constantes à la
 limite entre deux classes aient absolument besoin d'être encodées dans la plus
 petite de ces classes (ie. on ne se sert pas particulièrement souvent de 250,
 par exemple...), donc *a priori* le choix de `addsi` me paraît plus indiqué.
+
+À noter que ce choix n'est pas compatible avec la soustraction si on désigne le
+flag C comme étant un borrow (ie. leti r1 4; sub r0 r1 et addsi r0 -4 ne
+donneraient pas le même C). Comme ARM a un carry et qu'on est visiblement
+partis sur un carry, ça ne pose pas de souci.
 
 
 

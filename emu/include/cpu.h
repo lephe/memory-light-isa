@@ -8,6 +8,7 @@
 #ifndef	CPU_H
 #define	CPU_H
 
+#include <stdio.h>
 #include <defs.h>
 #include <memory.h>
 
@@ -57,6 +58,14 @@ cpu_t *cpu_new(memory_t *mem);
 	@arg	cpu	CPU object allocated with cpu_new() to destroy
 */
 void cpu_destroy(cpu_t *cpu);
+
+/*
+	cpu_dump() -- print CPU state to a stream
+
+	@arg	cpu	Which CPU to inspect
+	@arg	stream	Stream to output to
+*/
+void cpu_dump(cpu_t *cpu, FILE *stream);
 
 /*
 	cpu_execute() -- read an execute an instruction

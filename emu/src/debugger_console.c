@@ -48,10 +48,25 @@ char *debugger_prompt(char ***args_ptr)
 	static char cmd[80];	/* Array that holds the command string */
 	static char *args[41];	/* Array for the arguments - no more than 41 */
 
-	/* TODO - Display a proper prompt which can change state */
-	wattron(wcli, COLOR_PAIR(color_idle));
-	dbglog("idle %% ");
-	wattroff(wcli, COLOR_PAIR(color_idle));
+	switch(debugger_state)
+	{
+	case state_idle:
+		wattron(wcli, COLOR_PAIR(color_idle));
+		dbglog("idle %% ");
+		wattroff(wcli, COLOR_PAIR(color_idle));
+		break;
+	case state_break:
+		wattron(wcli, COLOR_PAIR(color_break));
+		dbglog("break %% ");
+		wattroff(wcli, COLOR_PAIR(color_break));
+		break;
+	case state_halt:
+	default:
+		wattron(wcli, COLOR_PAIR(color_halt));
+		dbglog("halt %% ");
+		wattroff(wcli, COLOR_PAIR(color_halt));
+		break;
+	}
 
 	/* Get the command, and provide the args array if requested */
 	wgetnstr(wcli, cmd, 80);
