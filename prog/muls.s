@@ -1,12 +1,17 @@
-    ; Initialization of the values.
-    leti    r0 0x100000000000
-    leti    r1 0xffffff
+;-----------------------------------------------------------------------------;
+;  Signed 64 * 64 -> 64 multiplication                                        ;
+;-----------------------------------------------------------------------------;
+
+    ; Initializing operands.
+    leti    r0 -0x738b6c
+    leti    r1 0xc4b3213e
+    ; r0 * r1 = 0xffa73867'd2874fd8
 
 
-    ; Getting the sign on the result. 
+    ; Getting the sign of the result.
     xor3    r4 r0 r1
 
-    ; To do sub r1 0 r1 (taking the negative value.)
+    ; Used to calculate sub r1 0 r1 (ie. taking the opposite).
     leti    r3 0
 
     ; r0 = |r0|
@@ -21,7 +26,7 @@ r0_is_positive:
     sub3    r1 r3 r1
 r1_is_positive:
 
-    ; Processing multiplication of two positives integers.
+    ; Calculating product of two positive integers.
 nonzero:
     shift   right r0 1
     jump    nc next
@@ -32,12 +37,12 @@ next:
     jump    nz nonzero
 
 
-    ; Ajusting the sign of the result.
-    cmpi    r4 0
-    jumpif  sgt multr2endshift
+    ; Adjusting the sign of the result.
+    shift   left r4 1
+    jumpif  nc r2_is_nonnegative
     sub3    r2 r3 r2
-multr2endshift:
+r2_is_nonnegative:
 
-    ; End of the programm.
+    ; End of the program.
 halt:
     jump    halt
