@@ -149,7 +149,7 @@ class CleartextBitcodeBackEnd(BackEnd):
             return "0" + self.binary_repr(val, 1)
         elif val in range(-2**7, 2**7):
             return "10" + self.binary_repr(val, 8, signed=True)
-        elif val in range(-2**31, 2**32):
+        elif val in range(-2**31, 2**31):
             return "110" + self.binary_repr(val, 32, signed=True)
         elif val in range(-2**63, 2**63):
             return "111" + self.binary_repr(val, 64, signed=True)
