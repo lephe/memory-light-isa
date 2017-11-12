@@ -82,8 +82,6 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
 
     def packets(self):
 
-        from pprint import pprint
-
         fullcode = self.get_fullcode()
 
         # Get position for all the labels
@@ -145,8 +143,8 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
             else:
                 break
 
-        pprint(addr_values)
-        pprint(list(map(lambda x: x[0], fullcode)))
+        # pprint(addr_values)
+        # pprint(list(map(lambda x: x[0], fullcode)))
 
         endcode = []
         for i, (l, x) in enumerate(fullcode):
@@ -164,9 +162,9 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
                     cond = x.typed_args[0].raw_value
                     endcode.append(f" {self.bin_condition(cond)}")
                 k, n = addr_values[i]
-                endcode.append(f" {self.bit_prefix[k] + self.binary_repr(n, k, signed=True)}")
-        
-        print(endcode)
+                endcode.append(f" {self.bit_prefix[k] + self.binary_repr(n, k,signed=True)}")
+
+        # print(endcode)
 
         return endcode
 

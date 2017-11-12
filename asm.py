@@ -55,8 +55,8 @@ if __name__ == "__main__":
         out = compile_asm(s, back_end=args.back_end,
                           generate_tree=args.huffman)
 
-        print(args.output)
-        print(args.filename.rsplit(".", maxsplit=1))
+        # print(args.output)
+        # print(args.filename.rsplit(".", maxsplit=1))
 
         if args.output is True:
             out.to_output()

@@ -60,17 +60,17 @@ jump  le -34821318
 
 or     r0 r0
 or    r0 10000
-or    r0 -1123000
+or    r0 1023011123000
 or     r0 r0 r0
 or    r0 r0 10000
-or    r0 r0 -1123000
+or    r0 r0 1023011123000
 
 and    r0 r0
 and   r0 10000
-and   r0 -1123000
+and   r0 1023011123000
 and    r0 r0 r0
 and   r0 r0 10000
-and   r0 r0 -1123000
+and   r0 r0 1023011123000
 
 write   sp 8 r0
 call    58129
@@ -81,4 +81,4 @@ return  ; j'aime les poneys
 
 xor    r0 r0 r0
 xor   r0 r0 10000
-xor   r0 r0 -1123000
+xor   r0 r0 1023011123000
