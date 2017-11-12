@@ -1,6 +1,6 @@
     ; Initialization of the values.
-    leti    r0 0x100000000000
-    leti    r1 0xffffff
+    leti    r0  -0x64234
+    leti    r1  0x1234123
 
 
     ; Getting the sign on the result. 
@@ -33,10 +33,11 @@ next:
 
 
     ; Ajusting the sign of the result.
-    cmpi    r4 0
-    jumpif  sgt multr2endshift
+
+    shift   left r4 1
+    jumpif  nc r2_is_positive
     sub3    r2 r3 r2
-multr2endshift:
+r2_is_positive:
 
     ; End of the programm.
 halt:
