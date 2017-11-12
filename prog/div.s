@@ -54,7 +54,7 @@ shft:
 nonzero:
 	; If r1 >= r0, increase result and decrease r1
 	cmp	r0 r1
-	jumpif	slt next
+	jumpif	lt next
 	add2	r2 r3
 	sub2	r0 r1
 next:
