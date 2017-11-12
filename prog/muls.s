@@ -1,19 +1,10 @@
     ; Initialization of the values.
-    leti    r0 -02138213
-    leti    r1 1242748123
-
-    
-
-    ; We can store the sign bit here. We assume here that r0 * r1 is signed
-    ; and stay on 64 bits. So it's signed value stays on 63 bits.
-    ; r3 = 0x8000000000000000
-    leti r3 1
-    shift left r3 63
+    leti    r0 0x100000000000
+    leti    r1 0xffffff
 
 
     ; Getting the sign on the result. 
-    xor3    r2 r1 r0
-    and2    r2 r3
+    xor3    r4 r0 r1
 
     ; To do sub r1 0 r1 (taking the negative value.)
     leti    r3 0
@@ -42,9 +33,7 @@ next:
 
 
     ; Ajusting the sign of the result.
-    cmpi    r2 0
-    shift   left  r2 1 ; Remove the last bit
-    shift   right r2 1
+    cmpi    r4 0
     jumpif  sgt multr2endshift
     sub3    r2 r3 r2
 multr2endshift:

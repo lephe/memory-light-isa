@@ -3,6 +3,7 @@
 src = $(wildcard *.s) $(wildcard *.ps)
 obj = $(patsubst %.ps,%.bin,$(src:.s=.bin))
 
+
 all: $(obj)
 
 %.bin: %.s
