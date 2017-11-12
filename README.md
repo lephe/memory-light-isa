@@ -4,7 +4,7 @@ Les programmes demandés sont dans /prog. Comme nos registres font 64 bits, les
 tailles ont été ajustées. On trouve donc :
 
   mult.s     Multiplication non signée 64 × 64 → 64 bits
-# TODO: AJOUTER MULTIPLICATION SIGNÉE 64 × 64 → 64 BITS ICI SI NÉCESSAIRE
+/*muls.ps    Multiplication signée 64 × 64 → 64 bits*/
   mull.s     Multiplication signée 64 × 64 → 128 bits
   div.s      Division signée 64 / 64 → 64 bits
   test_*     Des tests sans rapport avec le rendu
