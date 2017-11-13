@@ -114,6 +114,8 @@ uint64_t memory_read(memory_t *mem, uint64_t address, size_t n)
 	if(address + n > mem->memsize) fatal("memory_read(): Out of bounds "
 		"(%x:%u > %x)", address, n, mem->memsize);
 
+	if(!n) return 0;
+
 	uint64_t base = address >> 6;
 	int right = (address & 63) + n;
 
@@ -122,6 +124,9 @@ uint64_t memory_read(memory_t *mem, uint64_t address, size_t n)
 	if(right <= 64)
 	{
 		uint64_t word = htobe64(mem->mem[base]);
+
+		/* In some cases the shift below U.B., so we check */
+		if(n == 64) return word;
 		return (word >> (64 - right)) & ((1ul << n) - 1);
 	}
 
@@ -152,8 +157,10 @@ void memory_write(memory_t *mem, uint64_t address, uint64_t x, size_t n)
 	if(address + n > mem->memsize) fatal("memory_write: Out of bounds "
 		"(%x:%u > %x)", address, n, mem->memsize);
 
-	/* Remove additional unwanted bits */
-	x &= (1ul << n) - 1;
+	if(!n) return;
+
+	/* Remove additional unwanted bits and be careful about U.B. */
+	if(n < 64) x &= (1ul << n) - 1;
 
 	uint64_t base = address >> 6;
 	int right = (address & 63) + n;
@@ -164,7 +171,8 @@ void memory_write(memory_t *mem, uint64_t address, uint64_t x, size_t n)
 		right = 64 - right;	/* Number of free bits at the right */
 
 		uint64_t word = htobe64(mem->mem[base]);
-		uint64_t mask = ((1ul << n) - 1) << right;
+		uint64_t mask = (n < 64) ? ((1ul << n) - 1) : (uint64_t)(-1);
+		mask <<= right;
 
 		word = (word & ~mask) | (x << right);
 		mem->mem[base] = be64toh(word);

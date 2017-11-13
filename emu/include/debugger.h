@@ -35,7 +35,7 @@ void debugger(const char *filename, cpu_t *cpu);
 /* Ncurses window panels */
 extern WINDOW *wcode;
 extern WINDOW *wreg;
-extern WINDOW *wstack;
+extern WINDOW *wmem;
 extern WINDOW *wframe;
 extern WINDOW *wcli;
 
@@ -105,6 +105,19 @@ void debugger_code_init(void);
 	the emulated CPU's PC to display relevant code.
 */
 void debugger_code(void);
+
+/*
+	debugger_memory_move() -- display another section of the memory
+
+	@arg	address	Top address of the new section to display
+*/
+void debugger_memory_move(uint64_t address);
+
+/*
+	debugger_memory() -- refresh the memory panel
+*/
+void debugger_memory(void);
+
 
 /*
 	dbglog() -- print messages to the console

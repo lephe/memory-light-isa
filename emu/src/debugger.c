@@ -13,7 +13,7 @@
 
 WINDOW *wcode		= NULL;		/* Disassembled code */
 WINDOW *wreg		= NULL;		/* Register state */
-WINDOW *wstack		= NULL;		/* Stack view */
+WINDOW *wmem		= NULL;		/* Stack view */
 WINDOW *wframe		= NULL;		/* Console frame */
 WINDOW *wcli		= NULL;		/* Debugger console */
 
@@ -24,7 +24,6 @@ memory_t *debugger_mem	= NULL;		/* Debugged memory */
 debugger_state_t debugger_state = state_idle;
 
 static void draw_reg(void);
-static void draw_stack(void);
 
 
 //---
@@ -39,11 +38,13 @@ static void draw_stack(void);
 
 static const char *help_string =
 "Available commands:\n"
-"  s <n>   Step <n> instructions (default 1)\n"
-//"  b       Manage breakpoints (try 'help b')\n"
-"  r       Run until breakpoint, halt or end of program\n"
-//"  d       Disassemble program (try 'help d')\n"
-"  q       Quit debugger\n";
+"  s <n>       Step <n> instructions (default 1)\n"
+//"  b           Manage breakpoints (try 'help b')\n"
+"  r           Run until breakpoint, halt or end of program\n"
+//"  d           Disassemble program (try 'help d')\n"
+"  m <addr>    Display memory at address <addr> (hexadecimal, without '0x')\n"
+"    :ptr      Display memory at given pointer (:pc, :sp, :a0, :a1)\n"
+"  q           Quit debugger\n";
 /*static const char *help_string_b =
 "Manage breakpoints:\n"
 "  b           Show all configured breakpoints\n"
@@ -58,11 +59,11 @@ static const char *help_string_d =
 /* TODO - Show any memory, show stack, change program state, more? */
 
 /*
-	debugger_help_log() -- simple hack to color the command names
+	cmd_help_color() -- simple hack to color the command names
 
-	@arg	str	String to log; it will have command names colored
+	@arg	str	String to color; it will have command names colored
 */
-static void debugger_help_log(const char *str)
+static void cmd_help_color(const char *str)
 {
 	const char *next = NULL;
 
@@ -88,12 +89,12 @@ static void debugger_help_log(const char *str)
 }
 
 /*
-	debugger_help()
+	cmd_help()
 	Provide help about a few predefined topics.
 */
-static void debugger_help(int argc, __attribute__((unused)) char **argv)
+static void cmd_help(int argc, __attribute__((unused)) char **argv)
 {
-	if(argc == 1) debugger_help_log(help_string);
+	if(argc == 1) cmd_help_color(help_string);
 
 /*	for(int i = 1; i < argc; i++)
 	{
@@ -103,14 +104,17 @@ static void debugger_help(int argc, __attribute__((unused)) char **argv)
 */
 }
 
-static void debugger_step(int argc, char **argv)
+static void cmd_run_cpu(int steps)
 {
-	int steps = (argc >= 2) ? atoi(argv[1]) : 1;
+	cpu_t *cpu = debugger_cpu;
+	cpu->h = cpu->m = cpu->t = 0;
 
-	while(debugger_cpu->ptr[PC] < debugger_mem->text && steps--)
+	/* Also check when CPU reaches the end of the code */
+	while(cpu->ptr[PC] < debugger_mem->text && steps)
 	{
-		cpu_execute(debugger_cpu);
-		if(debugger_cpu->h) break;
+		cpu_execute(cpu);
+		if(steps > 0) steps--;
+		if(cpu->h) break;
 	}
 
 	/* FIXME - We don't need to refresh the code panel now if
@@ -119,35 +123,63 @@ static void debugger_step(int argc, char **argv)
 	debugger_code();
 
 	draw_reg();
-	draw_stack();
 
-	/* TODO - Set the halt status on cpu->h */
-	if(debugger_cpu->h) debugger_state = state_halt;
+	/* FIXME - We don't need to refresh the memory panel if the memory area
+	   that was written to is not visible */
+	if(cpu->m) debugger_memory();
+
+	if(cpu->h) debugger_state = state_halt;
+}
+
+static void cmd_step(int argc, char **argv)
+{
+	int steps = (argc >= 2) ? atoi(argv[1]) : 1;
+	cmd_run_cpu(steps);
+}
+
+static void cmd_run(void)
+{
+	cmd_run_cpu(-1);
 }
 
 /* static void debugger_break(void)
 {
 } */
 
-static void debugger_run(void)
+static void cmd_mem(int argc, char **argv)
 {
-	/* Check if CPU is at end of text section */
-	while(debugger_cpu->ptr[PC] < debugger_mem->text)
+	if(argc < 2)
 	{
-		cpu_execute(debugger_cpu);
-		if(debugger_cpu->h) break;
+		dbgerr("m: address missing (see 'help')\n");
+		return;
 	}
 
-	/* FIXME - We don't need to refresh the code panel now if
-	   1. We are not following PC
-	   2. PC was not, and is still not, visible in the current area */
-	debugger_code();
+	uint64_t address;
 
-	draw_reg();
-	draw_stack();
+	if(argv[1][0] == ':')
+	{
+		const char *names[4] = { ":pc", ":sp", ":a0", ":a1" };
+		int i;
+		for(i = 0; i < 4; i++) if(!strcmp(argv[1], names[i]))
+		{
+			address = debugger_cpu->ptr[i];
+			break;
+		}
+		if(i >= 4)
+		{
+			dbgerr("m: unknown pointer name (see 'help')\n");
+			return;
+		}
+	}
+	else address = strtol(argv[1], NULL, 16);
 
-	/* TODO - Set the halt status on cpu->h */
-	if(debugger_cpu->h) debugger_state = state_halt;
+	if(address >= debugger_mem->memsize)
+	{
+		dbgerr("m: out of bounds (%lx > %lx)\n", address,
+			debugger_mem->memsize);
+		return;
+	}
+	debugger_memory_move(address);
 }
 
 //---
@@ -161,7 +193,7 @@ static void debugger_free(void)
 {
 	if(wcode)	delwin(wcode);
 	if(wreg)	delwin(wreg);
-	if(wstack)	delwin(wstack);
+	if(wmem)	delwin(wmem);
 	if(wframe)	delwin(wframe);
 	if(wcli)	delwin(wcli);
 }
@@ -203,39 +235,6 @@ static void draw_reg(void)
 }
 
 /*
-	draw_stack() -- draw the stack state window
-	TODO - This probably needs to be moved into a separate component
-*/
-static void draw_stack(void)
-{
-	/* Border and title */
-
-	wclear(wstack);
-	wborder(wstack, 0, 0, 0, ' ', ACS_TTEE, 0, ACS_VLINE, ACS_VLINE);
-
-	wattron(wstack, A_BOLD);
-	mvwaddstr(wstack, 0, 1, " Stack state ");
-	wattroff(wstack, A_BOLD);
-
-	/* Some colors, since there's nothing on the stack for now
-
-	mvwaddstr(wstack, 2, 3, "Color set:");
-	for(int i = 0; i < 8; i++)
-	{
-		wmove(wstack, i + 3, 3);
-		wattron(wstack, COLOR_PAIR(i));
-		waddstr(wstack, "color  ");
-		wattron(wstack, A_DIM);
-		waddstr(wstack, "color  ");
-		wattroff(wstack, COLOR_PAIR(i) | A_DIM);
-	} */
-
-	mvwaddstr(wstack, 2, 3, "Not available (TODO)");
-
-	wrefresh(wstack);
-}
-
-/*
 	draw_frame() -- draw the frame around the console
 */
 static void draw_frame(void)
@@ -249,7 +248,7 @@ static void draw_frame(void)
 	size_t x, __attribute__((unused)) y;
 	getbegyx(wreg, y, x);
 	mvwaddch(wframe, 0, x, ACS_BTEE);
-	getbegyx(wstack, y, x);
+	getbegyx(wmem, y, x);
 	mvwaddch(wframe, 0, x, ACS_BTEE);
 
 	wattron(wframe, A_BOLD);
@@ -285,7 +284,7 @@ void debugger(const char *filename, cpu_t *cpu)
 	size_t h, w;
 	getmaxyx(stdscr, h, w);
 
-	size_t w3 = 27;
+	size_t w3 = 35;
 	size_t w2 = 26;
 	size_t w1 = w - w2 - w3;
 	size_t h1 = 6 * h / 10, h2 = h - h1;
@@ -298,11 +297,11 @@ void debugger(const char *filename, cpu_t *cpu)
 	/* TODO - Use stdscr for the cli frame (and maybe all others too?) */
 	wcode	= newwin(h1, w1, 0, 0);
 	wreg	= newwin(h1, w2, 0, w1);
-	wstack	= newwin(h1, w3, 0, w1 + w2);
+	wmem	= newwin(h1, w3, 0, w1 + w2);
 	wframe	= newwin(h2, w, h1, 0);
 	wcli	= newwin(h2 - 2, w - 2, h1 + 1, 1);
 
-	if(!wcode || !wreg || !wstack || !wframe || !wcli)
+	if(!wcode || !wreg || !wmem || !wframe || !wcli)
 	{
 		debugger_free();
 		return;
@@ -314,6 +313,7 @@ void debugger(const char *filename, cpu_t *cpu)
 	debugger_mem = cpu->mem;
 
 	debugger_code_init();
+	debugger_memory_move(0x000000);
 
 	/* Authorize ncurses to scroll the console */
 	scrollok(wcli, 1);
@@ -322,7 +322,7 @@ void debugger(const char *filename, cpu_t *cpu)
 	/* Draw initial things at startup */
 	debugger_code();
 	draw_reg();
-	draw_stack();
+	debugger_memory();
 	draw_frame();
 
 	/* Greet the user (it's important to greet the user) */
@@ -352,10 +352,11 @@ void debugger(const char *filename, cpu_t *cpu)
 		while((argv[argc] = strtok(NULL, " \t"))) argc++;
 
 		/* Call the associated function */
-		if(!strcmp(argv[0], "help")) debugger_help(argc, argv);
+		if(!strcmp(argv[0], "help")) cmd_help(argc, argv);
 		else if(!strcmp(argv[0], "q")) break;
-		else if(!strcmp(argv[0], "s")) debugger_step(argc, argv);
-		else if(!strcmp(argv[0], "r")) debugger_run();
+		else if(!strcmp(argv[0], "s")) cmd_step(argc, argv);
+		else if(!strcmp(argv[0], "r")) cmd_run();
+		else if(!strcmp(argv[0], "m")) cmd_mem(argc, argv);
 		else dbgerr("unknown command '%s'\n", argv[0]);
 	}
 

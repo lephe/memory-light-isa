@@ -411,7 +411,6 @@ void cpu_dump(cpu_t *cpu, FILE *stream)
 /* cpu_execute() -- read an execute an instruction */
 void cpu_execute(cpu_t *cpu)
 {
-	cpu->h = cpu->m = cpu->t = 0;
 	uint opcode = disasm_opcode(cpu->mem, &cpu->ptr[PC], NULL);
 	instructions[opcode](cpu);
 }
