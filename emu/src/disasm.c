@@ -49,6 +49,13 @@ uint disasm_opcode(memory_t *mem, uint64_t *ptr, const char **format)
 	return id;
 }
 
+/* disasm_format() -- get the format for a given instruction */
+const char *disasm_format(uint opcode)
+{
+	if(opcode >= DISASM_INS_COUNT) return NULL;
+	return instructions[opcode];
+}
+
 /* disasm_reg() -- read a register number */
 uint disasm_reg(memory_t *mem, uint64_t *ptr)
 {

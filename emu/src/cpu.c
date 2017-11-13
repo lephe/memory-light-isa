@@ -48,6 +48,9 @@ void cpu_destroy(cpu_t *cpu)
 //	mostly be inferred from their name and implementation.
 //---
 
+/* The number of times each instructions has been executed */
+static size_t counts[DISASM_INS_COUNT] = { 0 };
+
 /*
 	set_flags()
 	A quick routine to set the flags of the processor.
@@ -379,7 +382,7 @@ static void res_2(cpu_t *cpu)
 }
 
 /* Array of all instruction routines */
-static void (*instructions[37])(cpu_t *cpu) = {
+static void (*instructions[DISASM_INS_COUNT])(cpu_t *cpu) = {
 	add2,		add2i,		sub2,		sub2i,
 	cmp,		cmpi,		let,		leti,
 	shift,		readze,		readse,		jump,
@@ -412,5 +415,15 @@ void cpu_dump(cpu_t *cpu, FILE *stream)
 void cpu_execute(cpu_t *cpu)
 {
 	uint opcode = disasm_opcode(cpu->mem, &cpu->ptr[PC], NULL);
+
+	/* Provide statistics about the number of executed instructions */
+	counts[opcode]++;
+
 	instructions[opcode](cpu);
+}
+
+/* cpu_counts() -- statistics about executed instructions */
+size_t *cpu_counts(void)
+{
+	return counts;
 }

@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <defs.h>
 #include <memory.h>
+#include <disasm.h>
 
 /* Some names for the memory pointers */
 #define	PC	0
@@ -76,5 +77,15 @@ void cpu_dump(cpu_t *cpu, FILE *stream);
 	@arg	cpu	CPU which executes the instruction
 */
 void cpu_execute(cpu_t *cpu);
+
+/*
+	cpu_counts() -- statistics about executed instructions
+	Returns an array of DISASM_INS_COUNT integers indicating the number of
+	times each instructions has been executed so far. This value is a
+	global count for all cpu_t instances working with the module.
+
+	@return		Count of executed instructions for each instruction
+*/
+size_t *cpu_counts(void);
 
 #endif	/* CPU_H */

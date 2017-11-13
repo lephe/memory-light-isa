@@ -44,6 +44,7 @@ static const char *help_string =
 //"  d           Disassemble program (try 'help d')\n"
 "  m <addr>    Display memory at address <addr> (hexadecimal, without '0x')\n"
 "    :ptr      Display memory at given pointer (:pc, :sp, :a0, :a1)\n"
+"  c           Show counts of executed instructions so far\n"
 "  q           Quit debugger\n";
 /*static const char *help_string_b =
 "Manage breakpoints:\n"
@@ -180,6 +181,20 @@ static void cmd_mem(int argc, char **argv)
 		return;
 	}
 	debugger_memory_move(address);
+}
+
+static void cmd_counts(void)
+{
+	size_t *counts = cpu_counts();
+
+	for(uint i = 0; i < DISASM_INS_COUNT; i++)
+	{
+		const char *format = disasm_format(i);
+		dbglog("  %6s %-6u", format + 6, counts[i]);
+		if((i & 7) == 7) dbglog("\n");
+	}
+
+	if((DISASM_INS_COUNT & 7) != 7) dbglog("\n");
 }
 
 //---
@@ -357,6 +372,7 @@ void debugger(const char *filename, cpu_t *cpu)
 		else if(!strcmp(argv[0], "s")) cmd_step(argc, argv);
 		else if(!strcmp(argv[0], "r")) cmd_run();
 		else if(!strcmp(argv[0], "m")) cmd_mem(argc, argv);
+		else if(!strcmp(argv[0], "c")) cmd_counts();
 		else dbgerr("unknown command '%s'\n", argv[0]);
 	}
 

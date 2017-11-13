@@ -14,6 +14,9 @@
 #include <defs.h>
 #include <memory.h>
 
+/* Number of different instructions */
+#define	DISASM_INS_COUNT	37
+
 /*
 	arg_t enumeration
 	Kinds of arguments that may be passed to instructions. Each instruction
@@ -76,6 +79,14 @@ typedef enum
 	@returns	The identifier of the first opcode available at *ptr
 */
 uint disasm_opcode(memory_t *mem, uint64_t *ptr, const char **format);
+
+/*
+	disasm_format() -- get the format for a given instruction
+
+	@arg	opcode	Opcode value compatible with those of disasm_opcode()
+	@return		Format string for this instruction
+*/
+const char *disasm_format(uint opcode);
 
 /*
 	disasm_reg() -- read a register number
