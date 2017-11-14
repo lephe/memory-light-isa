@@ -159,6 +159,7 @@ static void readze(cpu_t *cpu)
 {
 	uint ptr = get(pointer), size = get(size), rd = get(reg);
 	cpu->r[rd] = memory_read(cpu->mem, cpu->ptr[ptr], size);
+	cpu->ptr[ptr] += size;
 }
 
 static void readse(cpu_t *cpu)
@@ -166,6 +167,7 @@ static void readse(cpu_t *cpu)
 	uint ptr = get(pointer), size = get(size), rd = get(reg);
 	uint64_t data = memory_read(cpu->mem, cpu->ptr[ptr], size);
 	cpu->r[rd] = sign_extend(data, size);
+	cpu->ptr[ptr] += size;
 }
 
 static void jump(cpu_t *cpu)
@@ -232,6 +234,7 @@ static void write(cpu_t *cpu)
 {
 	uint ptr = get(pointer), size = get(size), rs = get(reg);
 	memory_write(cpu->mem, cpu->ptr[ptr], cpu->r[rs], size);
+	cpu->ptr[ptr] += size;
 
 	/* Let the debugger know about this memory change */
 	cpu->m = 1;

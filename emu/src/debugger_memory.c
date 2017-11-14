@@ -17,7 +17,6 @@ static uint64_t address = 0x000000;
 void debugger_memory_move(uint64_t address_arg)
 {
 	address = address_arg;
-	debugger_memory();
 }
 
 /* debugger_memory() -- refresh the memory panel */
@@ -44,10 +43,12 @@ void debugger_memory(void)
 		mvwprintw(wmem, row, 3, "%08x", src);
 
 		data = memory_read(debugger_mem, src, 64);
-		wprintw(wmem, "  %04x %04x %04x %04x",
-			data >> 48, (data >> 32) & 0xffff,
-			(data >> 16) & 0xffff, data & 0xffff);
+		uint16_t d1 = data >> 48;
+		uint16_t d2 = (data >> 32) & 0xffff;
+		uint16_t d3 = (data >> 16) & 0xffff;
+		uint16_t d4 = data & 0xffff;
 
+		wprintw(wmem, "  %04lx %04lx %04lx %04lx", d1, d2, d3, d4);
 		src += 64;
 	}
 

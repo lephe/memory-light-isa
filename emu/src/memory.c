@@ -4,6 +4,7 @@
 
 #include <memory.h>
 #include <errors.h>
+#include <graphical.h>
 
 /* memory_new() -- allocate a virtual memory() */
 memory_t *memory_new(uint64_t memsize, uint64_t stack, uint64_t vramsize)
@@ -19,6 +20,9 @@ memory_t *memory_new(uint64_t memsize, uint64_t stack, uint64_t vramsize)
 	if(stack + vramsize > memsize)
 		fatal("inconsistent memory layout, no space left for video "
 		"memory");
+	if(stack & 0xf)
+		fatal("inconsistent memory layout, video ram should be "
+		"16-aligned");
 	if(stack + vramsize == memsize)
 		warn("no space left for the data segment");
 
@@ -27,7 +31,7 @@ memory_t *memory_new(uint64_t memsize, uint64_t stack, uint64_t vramsize)
 	   8-aligned. We thus make sure the size of memory_t is 8-padded */
 	size_t base = (sizeof(memory_t) + 7) & ~7;
 	size_t size = base + ((memsize + 7) >> 3);
-	void *data = malloc(size);
+	void *data = calloc(size, 1);
 
 	if(!data) ifatal("# memory_new(): cannot allocate memory");
 	memory_t *mem = data;
@@ -191,4 +195,14 @@ void memory_write(memory_t *mem, uint64_t address, uint64_t x, size_t n)
 		mem->mem[base]     = be64toh(w1);
 		mem->mem[base + 1] = be64toh(w2);
 	}
+
+	/* Check whether the video memory was affected */
+	printf("%lx/%zu in [%lx, %lx]?\n", address, n, mem->stack,
+		mem->stack + mem->vramsize);
+
+	if(address + n < mem->stack) return;
+	if(address >= mem->stack + mem->vramsize) return;
+
+	/* Send a graphical refresh signal */
+	graphical_refresh();
 }

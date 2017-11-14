@@ -12,7 +12,7 @@ obj	= $(src:src/%=build/%.o)
 # _DEFAULT_SOURCE is for endian.h
 cflags	= -Wall -Wextra -std=c11 -I include -D_DEFAULT_SOURCE
 dflags	= -MT $@ -MMD -MP -MF $(@:.o=.d)
-lflags	= $(cflags) -lncurses
+lflags	= $(cflags) -lncurses -lSDL2
 
 # On some platforms where binutils does not automatically link in libtinfo as a
 # dependency to ncurses, it may be required to link it manually.

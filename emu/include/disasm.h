@@ -84,7 +84,7 @@ uint disasm_opcode(memory_t *mem, uint64_t *ptr, const char **format);
 	disasm_format() -- get the format for a given instruction
 
 	@arg	opcode	Opcode value compatible with those of disasm_opcode()
-	@return		Format string for this instruction
+	@returns	Format string for this instruction
 */
 const char *disasm_format(uint opcode);
 

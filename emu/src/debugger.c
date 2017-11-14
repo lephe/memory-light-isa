@@ -181,6 +181,7 @@ static void cmd_mem(int argc, char **argv)
 		return;
 	}
 	debugger_memory_move(address);
+	debugger_memory();
 }
 
 static void cmd_counts(void)
@@ -376,6 +377,10 @@ void debugger(const char *filename, cpu_t *cpu)
 		else dbgerr("unknown command '%s'\n", argv[0]);
 	}
 
-	endwin();
 	debugger_free();
+
+	/* This will not actually free the screen, which is normal for an
+	   ncurses implementation. Memory leaks related to initscr() are
+	   entirely normal */
+	endwin();
 }

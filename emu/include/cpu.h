@@ -84,7 +84,7 @@ void cpu_execute(cpu_t *cpu);
 	times each instructions has been executed so far. This value is a
 	global count for all cpu_t instances working with the module.
 
-	@return		Count of executed instructions for each instruction
+	@returns	Count of executed instructions for each instruction
 */
 size_t *cpu_counts(void);
 

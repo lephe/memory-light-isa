@@ -11,7 +11,7 @@
 
 	@arg	x	Value to sign-extend
 	@arg	n	Number of bits on which x is represented
-	@return		x in signed 64-bit format
+	@returns	x in signed 64-bit format
 */
 int64_t sign_extend(uint64_t x, uint n);
 

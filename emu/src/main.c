@@ -9,6 +9,7 @@
 #include <memory.h>
 #include <cpu.h>
 #include <debugger.h>
+#include <graphical.h>
 
 //---
 //	Command-line parsing
@@ -190,9 +191,6 @@ int main(int argc, char **argv)
 	if(argc == 1 || opt.help) help((const char **)argv);
 	if(!opt.filename) fatal("no input file");
 
-	if(opt.graphical)
-		fatal("cannot honor graphical mode x_x (TODO)");
-
 	/* Allocate a virtual memory and load the program into it */
 	mem = memory_new(opt.memsize, opt.stack, 0);
 	memory_load(mem, opt.filename);
@@ -202,6 +200,12 @@ int main(int argc, char **argv)
 
 	/* It's show time! */
 
+	if(opt.graphical)
+	{
+		void *vram = (void *)mem->mem + (mem->stack >> 3);
+		if(graphical_start(160, 128, vram)) return 1;
+	}
+
 	if(!opt.debugger)
 	{
 		while(cpu->ptr[PC] < mem->text && !cpu->h)
@@ -209,8 +213,24 @@ int main(int argc, char **argv)
 
 		puts("At end of execution:");
 		cpu_dump(cpu, stdout);
+
+		/* In run mode, the execution may stop very quickly; leave the
+		   window open until the user closes it */
+		if(opt.graphical)
+		{
+			puts("\nThe program will exit when you close the "
+				"graphical window.");
+			graphical_wait();
+		}
 	}
-	else debugger(opt.filename, cpu);
+	else
+	{
+		debugger(opt.filename, cpu);
+
+		/* By contrast, the debugger mode can only end when the user
+		   explicity requires it, so close the window immediately */
+		graphical_stop();
+	}
 
 	return 0;
 }
