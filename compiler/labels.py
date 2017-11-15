@@ -126,7 +126,7 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
                     if label not in label_dict:
                         raise BackEndError("Undefined label")
 
-                    i = label_dict[label_dict]
+                    i = label_dict[label]
 
                     nb_bit, old_s = addr_values[j]
 
