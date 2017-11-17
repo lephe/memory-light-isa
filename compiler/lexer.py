@@ -26,7 +26,7 @@ class Lexer(object):
             LexType.DIRECTION:  r'\b(?:left|right)\b',
             LexType.NUMBER:     r'[+-]?\b(?:0x[0-9A-Fa-f]+|[0-9]+)\b',
             LexType.COMMENT:    r';.*',
-            LexType.CONDITION:  r'\b(?:eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|v)\b',
+            LexType.CONDITION:  r'\b(?:eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|v|le)\b',
             LexType.MEMCOUNTER: r'\b(?:pc|sp|a0|a1)\b',
 
             # LABELS/IMPORTS
@@ -46,7 +46,7 @@ class Lexer(object):
         self.rexp = re.compile(tok_regex)
 
         self.aliases = {
-            LexType.CONDITION: {"z": "eq", "nz": "neq", "nc": "ge", "c": "lt"}
+            LexType.CONDITION: {"z": "eq", "nz": "neq", "nc": "ge", "c": "lt", "le": "v"}
         }
 
     def lex(self, code):
