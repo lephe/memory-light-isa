@@ -13,6 +13,9 @@ struct thread_args
 SDL_Thread *thread = NULL;
 static int thread_main(void *args);
 
+/* Timer handler */
+static Uint32 timer_handler(Uint32 interval, void *arg);
+
 /* User event number registered from SDL */
 static Uint32 event_user;
 
@@ -25,6 +28,7 @@ static Uint32 event_user;
 SDL_Window *window	= NULL;
 SDL_Renderer *renderer	= NULL;
 SDL_Texture *texture	= NULL;
+SDL_TimerID timer	= 0;
 
 
 
@@ -39,6 +43,7 @@ static void cleanup(void)
 	if(texture) SDL_DestroyTexture(texture);
 	if(renderer) SDL_DestroyRenderer(renderer);
 	if(window) SDL_DestroyWindow(window);
+	if(timer) SDL_RemoveTimer(timer);
 
 	SDL_Quit();
 }
@@ -75,8 +80,8 @@ int graphical_start(size_t width, size_t height, void *vram)
 	args.height = height;
 	args.vram = vram;
 
-	/* Initialize SDL to start the video and event services */
-	int status = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+	/* Initialize SDL to start the video, event and timer services */
+	int status = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
 	if(status < 0)
 		fail("cannot initialize SDL: %s", SDL_GetError());
 
@@ -93,14 +98,16 @@ int graphical_start(size_t width, size_t height, void *vram)
 		fail("cannot create window: %s", SDL_GetError());
 
 	/* Create a renderer for this window. Stick to good ol' sofwtare
-	   rendering cuz' others easily leak 20 MB memory */
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+	   rendering because others leak at lot of memory (20 MB) */
+	renderer = SDL_CreateRenderer(window, -1,  SDL_RENDERER_SOFTWARE);
 	if(!renderer)
 		fail("cannot create renderer: %s", SDL_GetError());
 
 	SDL_RenderSetScale(renderer, 2, 2);
 
-	/* Create a texture where we will render our screen data */
+	/* Create a texture where we will render our screen data. This format
+	   will slow down the rendering (~400 FPS instead of ~1000 FPS) but it
+	   will be enough for us */
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565,
 		SDL_TEXTUREACCESS_STREAMING, width, height);
 	if(!texture)
@@ -112,6 +119,14 @@ int graphical_start(size_t width, size_t height, void *vram)
 	if(!thread)
 		fail("cannot start the screen thread: %s", SDL_GetError());
 
+	/* Start a timer to let the thread regularly update the texture without
+	   sending it too much events */
+#ifndef GRAPHICAL_ASYNC
+	timer = SDL_AddTimer(20, timer_handler, NULL);
+	if(!timer)
+		fail("cannot start the timer: %s", SDL_GetError());
+#endif
+
 	/* Time to let the thread run! */
 	return 0;
 }
@@ -119,13 +134,27 @@ int graphical_start(size_t width, size_t height, void *vram)
 /* graphical_refresh() - send a refresh signal to the SDL thread */
 void graphical_refresh(void)
 {
+#ifdef GRAPHICAL_ASYNC
 	/* Allow calling this function even if the thread was not started */
 	if(!thread) return;
 
-	puts("refreshing");
-
 	/* Just send an event, the thread will eventually catch it */
 	send_event(EV_REFRESH, NULL, NULL);
+#endif
+}
+
+/* graphical_freeze() - stop the regular update */
+void graphical_freeze(void)
+{
+	if(!thread) return;
+
+	/* Send a final EV_REFRESH to make sure the latest changes to vram are
+	   displayed */
+	send_event(EV_REFRESH, NULL, NULL);
+
+	/* Stop the timer, and make sure cleanup() does not remove it again */
+	SDL_RemoveTimer(timer);
+	timer = 0;
 }
 
 /* graphical_wait() - wait for the SDL thread to stop */
@@ -155,48 +184,42 @@ void graphical_stop(void)
 
 
 //---
+//	Timer handler (yet another thread)
+//---
+
+static Uint32 timer_handler(Uint32 interval, __attribute__((unused)) void *arg)
+{
+	send_event(EV_REFRESH, NULL, NULL);
+	return interval;
+}
+
+
+
+//---
 //	Functions that run inside the thread
 //---
 
 /*
-	thread_copy() - copy the emulated vram to the surface
-	This function also upscales the whole thing for more fun.
-
-void thread_copy(struct thread_args *args, SDL_Surface *surface)
-{
-	uint16_t *src = args->vram;
-	void *dst = surface->pixels;
-	uint16_t *d1, *d2;
-
-	for(size_t y = 0; y < args->height; y++)
-	{
-		d1 = dst;
-		d2 = dst + surface->pitch;
-
-		for(size_t x = 0; x < args->width; x++)
-		{
-			uint16_t data = *src++;
-			*d1++ = data;
-			*d1++ = data;
-			*d2++ = data;
-			*d2++ = data;
-		}
-
-		dst += 2 * surface->pitch;
-	}
-}
-*/
-
-/*
 	thread_update() - update and render the screen contents
+
+	@arg	args		Thread arguments
+	@arg	texture		Target texture
+	@arg	renderer	Renderer associated with the screen window
 */
 void thread_update(struct thread_args *args, SDL_Texture *texture,
 	SDL_Renderer *renderer)
 {
+	void *pixels;
+	int pitch;
+
+	SDL_LockTexture(texture, NULL, &pixels, &pitch);
+
 	SDL_UpdateTexture(texture, NULL, args->vram, 2 * args->width);
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);
+
+	SDL_UnlockTexture(texture);
 }
 
 /*

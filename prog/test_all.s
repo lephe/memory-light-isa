@@ -55,7 +55,7 @@ getctr  pc r0
                                 jump  nc 34821318
                                 jump  lt -34821318
             jump  c -34821318
-jump  le -34821318
+jump  v -34821318
 
 
 or     r0 r0

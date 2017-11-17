@@ -218,6 +218,7 @@ int main(int argc, char **argv)
 		   window open until the user closes it */
 		if(opt.graphical)
 		{
+			graphical_freeze();
 			puts("\nThe program will exit when you close the "
 				"graphical window.");
 			graphical_wait();

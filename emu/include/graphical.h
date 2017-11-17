@@ -26,8 +26,15 @@ int graphical_start(size_t width, size_t height, void *vram);
 	The thread will update the screen contents when it receives the signal.
 	It is safe to call this function if the graphical interface is not
 	running.
+	This function does nothing if GRAPHICAL_ASYNC is not defined.
 */
 void graphical_refresh(void);
+
+/*
+	graphical_freeze() - stop the regular update
+	To be used when the program ends.
+*/
+void graphical_freeze(void);
 
 /*
 	graphical_wait() - wait for the SDL thread to stop and clean up

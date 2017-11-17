@@ -26,7 +26,7 @@ class Lexer(object):
             LexType.DIRECTION:  r'\b(?:left|right)\b',
             LexType.NUMBER:     r'[+-]?\b(?:0x[0-9A-Fa-f]+|[0-9]+)\b',
             LexType.COMMENT:    r';.*',
-            LexType.CONDITION:  r'\b(?:eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le)\b',
+            LexType.CONDITION:  r'\b(?:eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|v)\b',
             LexType.MEMCOUNTER: r'\b(?:pc|sp|a0|a1)\b',
 
             # LABELS/IMPORTS

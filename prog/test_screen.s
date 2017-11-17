@@ -1,7 +1,7 @@
 ; Test: plotting some pixels on the screen
 
 main:
-	; Place the video ram address to A0
+	; Load the video ram address to A0
 	getctr	sp r0
 	setctr	a0 r0
 

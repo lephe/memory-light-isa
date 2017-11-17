@@ -62,7 +62,7 @@ conditions = {
     "nc":   Condition("101"),
     "lt":   Condition("110"),
     "c":    Condition("110"),
-    "le":   Condition("111")}
+    "v":    Condition("111")}
 
 
 class TokenError(ValueError):
@@ -159,9 +159,9 @@ def asm_sconst(s):
     else:
         raise TokenError("invalid constant syntax : empty constant")
 
-    if val in range(2**1):
+    if val in range(-2**0, 2**0):
         # Range in NOT a list in python3
-        return "0" + binary_repr(val, 1)
+        return "0" + binary_repr(val, 1, signed=True)
     elif val in range(-2**7, 2**7):
         return "10" + binary_repr(val, 8, signed=True)
     elif val in range(-2**31, 2**32):
@@ -331,7 +331,7 @@ def asm_addr_unsigned(s):
         raise TokenError("invalid unsigned address : not in range")
 
 
-re_cond = re.compile(r"(eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|le)")
+re_cond = re.compile(r"(eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|v)")
 
 
 def asm_cond(s):

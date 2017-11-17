@@ -196,13 +196,11 @@ void memory_write(memory_t *mem, uint64_t address, uint64_t x, size_t n)
 		mem->mem[base + 1] = be64toh(w2);
 	}
 
-	/* Check whether the video memory was affected */
-	printf("%lx/%zu in [%lx, %lx]?\n", address, n, mem->stack,
-		mem->stack + mem->vramsize);
-
+	/* Check whether the video memory was affected, sending a graphical
+	   refresh when required */
+#ifdef GRAPHICAL_ASYNC
 	if(address + n < mem->stack) return;
 	if(address >= mem->stack + mem->vramsize) return;
-
-	/* Send a graphical refresh signal */
 	graphical_refresh();
+#endif
 }

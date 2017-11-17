@@ -86,7 +86,7 @@ class CleartextBitcodeBackEnd(BackEnd):
         "gt": "100",
         "ge": "101",
         "lt": "110",
-        "le": "111"}
+        "v":  "111"}
 
     def handle_line(self, line, space=None):
         if space is None:
@@ -144,9 +144,9 @@ class CleartextBitcodeBackEnd(BackEnd):
 
     def bin_sconstant(self, val):
 
-        if val in range(2**1):
+        if val in range(-2**0, 2**0):
             # Range in NOT a list in python3
-            return "0" + self.binary_repr(val, 1)
+            return "0" + self.binary_repr(val, 1, signed=True)
         elif val in range(-2**7, 2**7):
             return "10" + self.binary_repr(val, 8, signed=True)
         elif val in range(-2**31, 2**31):
