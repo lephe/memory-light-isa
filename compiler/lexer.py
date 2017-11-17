@@ -17,8 +17,8 @@ class Lexer(object):
 
 
             # Operators
-            LexType.OPERATION: r'\b(?:add|sub|cmp|let|shift|readze|readse|jump|' + \
-                               r'or|and|write|call|setctr|getctr|push|' +     \
+            LexType.OPERATION: r'\b(?:add|sub|cmp|let|shift|readze|readse|' + \
+                               r'jump|or|and|write|call|setctr|getctr|push|' +\
                                r'return|xor|asr|pop)\b',
 
             # Values
