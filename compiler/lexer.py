@@ -46,7 +46,8 @@ class Lexer(object):
         self.rexp = re.compile(tok_regex)
 
         self.aliases = {
-            LexType.CONDITION: {"z": "eq", "nz": "neq", "nc": "ge", "c": "lt", "le": "v"}
+            LexType.CONDITION: {"z": "eq", "nz": "neq", "nc": "ge", "c": "lt",
+                                "le": "v"}
         }
 
     def lex(self, code):
