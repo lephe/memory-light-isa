@@ -25,8 +25,12 @@ typedef struct
 	uint graphical	:1;
 	uint help	:1;
 
-	uint64_t	memsize;	/* Dynamic memory size */
-	uint64_t	stack;		/* Dynamic bottom stack address */
+	struct {
+		uint64_t text;
+		uint64_t stack;
+		uint64_t data;
+		uint64_t vram;
+	};
 
 	const char *filename;		/* Emulated binary file */
 } opt_t;
@@ -59,6 +63,24 @@ static uint64_t sizetoi(const char *arg)
 }
 
 /*
+	read_geometry() -- read the geometry info from a string
+	Returns non-zero on error.
+*/
+static int read_geometry(const char *arg, opt_t *opt)
+{
+	char str[4][64];
+	int x = sscanf(arg, "%64[0-9kM]:%64[0-9kM]:%64[0-9kM]:%64[0-9kM]",
+		str[0], str[1], str[2], str[3]);
+	if(x < 4) return 1;
+
+	opt->text	= sizetoi(str[0]);
+	opt->stack	= sizetoi(str[1]);
+	opt->data	= sizetoi(str[2]);
+	opt->vram	= sizetoi(str[3]);
+	return 0;
+}
+
+/*
 	parse_args() -- parse command-line options into an opt_t object
 
 	@arg	argc	Number of command-line arguments
@@ -70,7 +92,7 @@ static void parse_args(int argc, char **argv, opt_t *opt)
 	/* Clear structure with default values */
 	opt->debugger = opt->graphical = 0;
 	opt->help = 0;
-	opt->memsize = opt->stack = 0;
+	opt->text = opt->stack = opt->data = opt->vram = 0;
 	opt->filename = NULL;
 
 	error_clear();
@@ -87,22 +109,13 @@ static void parse_args(int argc, char **argv, opt_t *opt)
 		else if(!strcmp(arg, "-g") || !strcmp(arg, "--graphical"))
 			opt->graphical = 1;
 
-		/* Arguments related to memory geometry */
-		else if(!strcmp(arg, "--stack-addr"))
+		/* Memory geometry */
+		else if(!strcmp(arg, "--geometry"))
 		{
 			arg = argv[++i];
 			if(!arg) error("expected value after --stack-addr");
-			else opt->stack = sizetoi(arg);
-			if(!opt->stack)
-				error("invalid stack address: '%s'", arg);
-		}
-		else if(!strcmp(arg, "--memory-size"))
-		{
-			arg = argv[++i];
-			if(!arg) error("expected value after --memory-size");
-			else opt->memsize = sizetoi(arg);
-			if(!opt->memsize)
-				error("invalid memory size: '%s'", arg);
+			else if(read_geometry(arg, opt))
+				error("invalid geometry: '%s'", arg);
 		}
 
 		/* Help message */
@@ -139,9 +152,9 @@ const char *help_string =
 "  -g | --graphical   With -r or -d, enable graphical I/O using SDL\n\n"
 
 "Available options:\n"
-"  --stack-addr  <addr>   Set the bottom stack address (default 1M)\n"
-"  --memory-size <size>   Set the total memory size (default 4M)\n"
-"Both constants may use the 'k' or 'M' suffixes (eg. 16k or 2M).\n";
+"  --geometry <text>:<stack>:<data>:<vram>\n"
+"                     Set the size of the four memory segments ('k' or 'M'\n"
+"                     suffixes may be used)\n";
 
 /* Emulated memory and CPU */
 static memory_t *mem	= NULL;
@@ -192,7 +205,7 @@ int main(int argc, char **argv)
 	if(!opt.filename) fatal("no input file");
 
 	/* Allocate a virtual memory and load the program into it */
-	mem = memory_new(opt.memsize, opt.stack, 0);
+	mem = memory_new(opt.text, opt.stack, opt.data, opt.vram);
 	memory_load(mem, opt.filename);
 
 	/* Create a CPU and give it the memory */

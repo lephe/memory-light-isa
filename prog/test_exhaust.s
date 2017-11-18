@@ -1,7 +1,7 @@
 ; To test the instructions, execute the program step-by-step and check the
-; values of the simulator's register, PC, flags when suggested.
-; This program tests all the instructions without relying on labels.
+; values of the simulator's registers, PC and flags when suggested.
 ; Untested instructions: readze, readse, write, push (memory-related)
+; Note: small values are represented as decimal; 64-bit values are hexadecimal
 
 ; let and leti
 	leti	r0 0
@@ -16,8 +16,8 @@
 	leti	r5 -0x76528
 	leti	r6 0x73926fc86c76b765
 	let	r7 r4
-	; CHECK that all values correspond
-	; (If your registers are smaller than 64 bits, drop the higher bits)
+	; CHECK that all values correspond (if your registers are smaller than
+	; 64 bits, drop the higher bits)
 
 ; add2, add2i, sub2, sub2i
 	add2	r4 r2
@@ -26,14 +26,16 @@
 	; CHECK r4 = 00000000'8793cbfe
 
 	add2	r6 r6
+	; CHECK zero clear, negative set, carry clear, overflow set
+
 	add2	r6 r6
-	; CHECK zero clear, negative set, carry set, overflow set
+	; CHECK zero clear, negative set, carry set, overflow clear
 
 	sub2	r3 r3
 	; CHECK zero set, negative clear, carry *clear*, overflow clear
-	; If you use a carry instead of a borrow, you will know it here
+	; If you implemented a carry instead of a borrow, you will know it here
 
-	let	r5 0x100
+	leti	r5 0x100
 	sub2i	r5 0x7f3c
 	; CHECK r5 = ffffffff'ffff81c4, zero clear, negative set, carry set,
 	; overflow clear
@@ -41,8 +43,8 @@
 ; cmp, cmpi
 	cmpi	r5 0
 	; CHECK zero clear, negative set, carry clear, overflow clear
-	; Note: this one is important, make sure it's carry *clear* (ie. that
-	; you don't catch the carry coming out of calculating -0)
+	; Note: this one is important, make sure it's carry *clear* (you should
+	; not catch the carry coming out of calculating -0)
 
 	leti	r2 15
 	leti	r3 40
@@ -53,7 +55,7 @@
 	cmp	r2 r3
 	; CHECK zero clear, negative set, carry clear, overflow clear
 
-	cmp	r3 40
+	cmpi	r3 40
 	; CHECK zero set, negative clear, carry clear, overflow clear
 
 	leti	r3 0x7fffffffffffffff
@@ -141,7 +143,7 @@
 	or2i	r0 0xff
 	; CHECK r0 = 0xff, zero clear, negative clear, carry clear
 
-	let	r4 -1
+	leti	r4 -1
 	or2	r0 r4
 	; CHECK r0 = -1, zero clear, negative set, carry clear
 
@@ -163,20 +165,21 @@
 ; extra attention to the values of PC and r7 at each step.
 
 main:
+	; If you can get the address of the add2i below, write it down
 	leti	r0 0
-	call	0x4cc
+	call	0x545
 	add2i	r0 100
-	; CHECK r0 = 112
+	; When you reach this point, check that r0 = 112
 
 	jump	0x6c
 
 func1:
-	; Sub-function 1, calls sub 2 twice then returns
-	; CHECK r7 = address of the jump above
+	; Sub-function 1, calls sub-function 2 twice then returns
+	; CHECK r7 = address of the add2i above
 	let	r5 r7
 	add2i	r0 10
-	call	0x528
-	call	0x528
+	call	0x5a1
+	call	0x5a1
 	let	r7 r5
 	return
 
@@ -207,16 +210,21 @@ func2:
 	leti	r0 10
 	leti	r1 -15
 	add3	r2 r1 r0
-	; CHECK r2 = ffffffff'fffffffb, zero clear, negative set, carry clear
+	; CHECK r2 = ffffffff'fffffffb, zero clear, negative set, carry clear,
+	; overflow clear
 
 	add3i	r2 r0 5
-	; CHECK r2 = 15, zero clear, negative clear, carry clear
+	; CHECK r2 = 15, zero clear, negative clear, carry clear, overflow
+	; clear
 
-	sub3	r3 r2 r2
-	; CHECK r3 = 0, zero set, negative clear, carry clear
+	leti	r2 -0x7fffffffffffffff
+	leti	r3 2
+	sub3	r3 r2 r3
+	; CHECK r3 = -r2, zero clear, negative clear, carry clear, overflow set
 
 	sub3i	r0 r1 20
-	; CHECK r0 = ffffffff'ffffffdd, zero clear, negative set, carry clear
+	; CHECK r0 = ffffffff'ffffffdd, zero clear, negative set, carry clear,
+	; overflow clear
 
 ; or3, or3i, and3, and3i
 	leti	r4 15
@@ -242,25 +250,25 @@ func2:
 	leti	r7 12
 	leti	r5 28
 	xor3	r6 r5 r7
-	; CHECK r6 = 16, zero clear, carry clear
+	; CHECK r6 = 16, zero clear, negative clear, carry clear
 
 	xor3i	r6 r6 0x10
-	; CHECK r6 = 0, zero set, carry clear
+	; CHECK r6 = 0, zero set, negative clear, carry clear
 
 ; asr3
 	leti	r5 15
 	asr3	r7 r5 2
-	; CHECK r7 = 3, zero clear
+	; CHECK r7 = 3, zero clear, negative clear, carry set
 
 	asr3	r7 r7 2
-	; CHECK r7 = 0, zero set
+	; CHECK r7 = 0, zero set, negative clear, carry set
 
 	leti	r5 -15
 	asr3	r7 r5 1
-	; CHECK r7 = -8, zero clear
+	; CHECK r7 = -8, zero clear, negative set, carry set
 
 	asr3	r7 r7 22
-	; CHECK r7 = -1, zero clear
+	; CHECK r7 = -1, zero clear, negative set, carry set
 
 ; You may need this to stop the program
 	jump	-13

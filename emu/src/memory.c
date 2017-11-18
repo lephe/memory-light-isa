@@ -7,42 +7,43 @@
 #include <graphical.h>
 
 /* memory_new() -- allocate a virtual memory() */
-memory_t *memory_new(uint64_t memsize, uint64_t stack, uint64_t vramsize)
+memory_t *memory_new(uint64_t text, uint64_t stack, uint64_t data,
+	uint64_t vram)
 {
 	/* Using default parameters if some are not provided */
-	if(!memsize)	memsize  = MEMORY_DEFAULT_MEMSIZE;
-	if(!stack)	stack    = MEMORY_DEFAULT_STACK;
-	if(!vramsize)	vramsize = MEMORY_DEFAULT_VRAMSIZE;
+	if(!text)	text	= MEMORY_DEFAULT_TEXT;
+	if(!stack)	stack	= MEMORY_DEFAULT_STACK;
+	if(!data)	data	= MEMORY_DEFAULT_DATA;
+	if(!vram)	vram	= MEMORY_DEFAULT_VRAM;
 
-	/* Checking the consistency of the provided geometry */
-	if(stack > memsize)
-		fatal("inconsistent memory layout, no space left for stack");
-	if(stack + vramsize > memsize)
-		fatal("inconsistent memory layout, no space left for video "
-		"memory");
-	if(stack & 0xf)
-		fatal("inconsistent memory layout, video ram should be "
-		"16-aligned");
-	if(stack + vramsize == memsize)
-		warn("no space left for the data segment");
+	/* Checking the consistency of all values */
+	if((text & 63) || (stack & 63) || (data & 63) || (vram & 63))
+		fatal("all segment sizes ought to be multiples of 64");
+	if(text + stack + data != 0x100000)
+		warn("chosen vram location is incompatible with the standard");
+	if(vram < 50000)
+		warn("vram is too small for the standard");
+
+	uint64_t memsize = text + stack + data + vram;
 
 	/* Allocating the structure and the data array in one go. This requires
 	   an alignment trick because we'd also like the memory pointer to be
 	   8-aligned. We thus make sure the size of memory_t is 8-padded */
 	size_t base = (sizeof(memory_t) + 7) & ~7;
 	size_t size = base + ((memsize + 7) >> 3);
-	void *data = calloc(size, 1);
 
-	if(!data) ifatal("# memory_new(): cannot allocate memory");
-	memory_t *mem = data;
+	void *memdata = calloc(size, 1);
+	if(!memdata) ifatal("# memory_new(): cannot allocate memory");
+
+	memory_t *mem = memdata;
 
 	/* Filling in the structure fields */
 	mem->memsize	= memsize;
-	mem->text	= 0x0000000000000000l;
-	mem->stack	= stack;
-	mem->vramsize	= vramsize;
-	mem->data	= stack + vramsize;
-	mem->mem	= data + base;
+	mem->text	= text;
+	mem->stack	= text + stack;
+	mem->data	= text + stack;
+	mem->vram	= text + stack + data;
+	mem->mem	= memdata + base;
 
 	return mem;
 }
@@ -68,12 +69,12 @@ void memory_load(memory_t *mem, const char *filename)
 	size -= 8;
 
 	/* Check that it fits into memory */
-	if(8 * size > mem->stack)
+	if(8 * size > mem->text)
 	{
 		error("program is too large to fit in the code/stack segment "
-			"(%d > %d)", 8 * size, mem->stack);
+			"(%d > %d)", 8 * size, mem->text);
 		note("you may want to change the memory geometry using "
-			"--memory-size and --stack-addr");
+			"--geometry");
 	}
 
 	/* Read the data and close the file */

@@ -32,8 +32,9 @@ typedef struct
 	uint64_t r[8];		/* Remember to cast when required! */
 
 	uint z	:1;		/* Zero		ie. x == y */
-	uint c	:1;		/* Carry	ie. (uint)x < (uint)y */
-	uint n	:1;		/* Negative	ie. (int)x < (int) y */
+	uint n	:1;		/* Negative	ie.  (int) x <  (int) y */
+	uint c	:1;		/* Carry	ie. (uint) x < (uint) y */
+	uint v	:1;		/* Overflow	ie. integer overflow */
 
 	/* Flags for the debugger */
 	uint h	:1;		/* Halt, detects loops of one instruction */
@@ -44,7 +45,7 @@ typedef struct
 } cpu_t;
 
 /*
-	cpu_new() -- create a cpu and give it a memory
+	cpu_new() -- create a CPU and give it a memory
 	The CPU does not retain ownership of the memory object. The memory
 	object must be freed by the caller after the CPU is destroyed.
 

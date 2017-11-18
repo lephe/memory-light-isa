@@ -4,40 +4,41 @@ The emulator's memory is laid out as follows:
 
      0000 +-------------------+
           |      Program      |
-          +    -----------    +
-          |       Stack       |
     STACK +-------------------+
-          |    Video memory   |
+          |       Stack       |
      DATA +-------------------+
           |       Data        |
+     VRAM +-------------------+
+          |    Video memory   |
       END +-------------------+
 
 The program data is loaded at the beginning of the memory when the emulator
-starts. The stack pointer starts at address STACK and moves towards lower
-addresses. The video memory starts immediately at address STACK. The data
-segment is located after the video memory and takes up the end of the memory.
+starts. The stack pointer is initialized with address DATA and moves up towards
+lower addresses. The data area starts at address DATA after the stack. The
+video memory starts immediately at address VRAM.
 
-The size of the memory and the location of the STACK address can be changed at
-runtime using the following command-line arguments:
+The geometry of the memory can be customized at runtime using the --geometry
+command-line argument to specify the size of each segment:
 
-    --stack-addr   <addr>
-    --memory-size  <size>
+    --geometry <text>:<stack>:<data>:<vram>
 
-Both `<addr>` and `<size>` may be expressed in bits (eg. 256), in kibibits
-(eg. 8k), or in mibibits (eg. 2M).
+All four arguments are sizes in *bits*. All of them must be multiples of 64,
+and a compatibility warning is issued the video RAM starts at any other address
+than 0x100000. Sizes may be expressed in bits (eg. 256), in kibibits (eg. 8k),
+or in mibibits (eg. 2M). The default configuration is equivalent to:
 
-The video memory holds 16 bits of information for each of the 256 * 256 pixels
-of the screen, thus its size is fixed to 1M. The default configuration for the
-emulator is to have four segments of 1M each.
+    --geometry 256k:256:512k:50000
+
+The standard video memory is a buffer of 160 * 128 pixels with 16-bit depth,
+thus its size is fixed to 50000 bits.
 
 The four counters are initialized at startup with the following values:
 
     PC    0x000000
-    SP    STACK
-    A0    STACK
-    A1    DATA
+    SP    DATA
+    A0    DATA
+    A1    VRAM
 
-To be truly compatible with the variable memory layout, programs should only
-rely on these values, otherwise any geometry change could break them. Programs
-in the /prog directory usually rely inconsistently on the default geometry, so
-be careful.
+To be truly compatible with the variable memory layout, programs could only
+rely on these values. Programs in the /prog and /chip8 directory do not do this
+and will break if the memory geometry is changed carelessly.

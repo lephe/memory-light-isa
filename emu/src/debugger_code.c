@@ -52,7 +52,7 @@ static void debugger_arg(uint64_t *ptr, arg_t type)
 	/* Names for pointer and condition arguments */
 	const char *ptr_names[4] = { "pc", "sp", "a0", "a1" };
 	const char *cnd_names[8] = {
-		"z", "nz", "sgt", "slt", "gt", "nc", "c", "le"
+		"z", "nz", "sgt", "slt", "gt", "nc", "c", "v"
 	};
 
 	/* Arguments retrieved from the disasm module */
