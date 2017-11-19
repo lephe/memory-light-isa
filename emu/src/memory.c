@@ -197,11 +197,9 @@ void memory_write(memory_t *mem, uint64_t address, uint64_t x, size_t n)
 		mem->mem[base + 1] = be64toh(w2);
 	}
 
+#ifdef GRAPHICAL_ASYNC
 	/* Check whether the video memory was affected, sending a graphical
 	   refresh when required */
-#ifdef GRAPHICAL_ASYNC
-	if(address + n < mem->stack) return;
-	if(address >= mem->stack + mem->vramsize) return;
-	graphical_refresh();
+	if(address + n > mem->vram) graphical_refresh();
 #endif
 }

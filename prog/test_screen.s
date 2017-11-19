@@ -2,8 +2,12 @@
 
 main:
 	; Load the video ram address to A0
-	getctr	sp r0
+	leti	r0 0x100000
 	setctr	a0 r0
+
+	; Load the data segment address to A1
+	leti	r0 0x80000
+	setctr	a1 r0
 
 	; Colors: white, black, red, green, blue. Load them into memory
 	leti	r0 0xffff

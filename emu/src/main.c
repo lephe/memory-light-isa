@@ -215,7 +215,8 @@ int main(int argc, char **argv)
 
 	if(opt.graphical)
 	{
-		void *vram = (void *)mem->mem + (mem->stack >> 3);
+		printf("%lx %lx\n", mem->vram >> 3, mem->memsize >> 3);
+		void *vram = (void *)mem->mem + (mem->vram >> 3);
 		if(graphical_start(160, 128, vram)) return 1;
 	}
 

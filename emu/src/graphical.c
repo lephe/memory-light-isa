@@ -13,6 +13,9 @@ struct thread_args
 SDL_Thread *thread = NULL;
 static int thread_main(void *args);
 
+/* Buffer for format conversion */
+static void *buffer = NULL;
+
 /* Timer handler */
 static Uint32 timer_handler(Uint32 interval, void *arg);
 
@@ -40,6 +43,7 @@ static void cleanup(void)
 	/* Init failed, that's really sad */
 	if(!SDL_WasInit(SDL_INIT_EVERYTHING)) return;
 
+	if(buffer) free(buffer);
 	if(texture) SDL_DestroyTexture(texture);
 	if(renderer) SDL_DestroyRenderer(renderer);
 	if(window) SDL_DestroyWindow(window);
@@ -108,10 +112,15 @@ int graphical_start(size_t width, size_t height, void *vram)
 	/* Create a texture where we will render our screen data. This format
 	   will slow down the rendering (~400 FPS instead of ~1000 FPS) but it
 	   will be enough for us */
-	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB565,
+	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
 		SDL_TEXTUREACCESS_STREAMING, width, height);
 	if(!texture)
 		fail("cannot create texture: %s", SDL_GetError());
+
+	/* Create a buffer where to perform format and endianness conversion */
+	buffer = malloc(4 * args.width * args.height);
+	if(!buffer)
+		fail("cannot create a screen buffer");
 
 	/* Apparently nothing needs to be done to free the thread object
 	   returned by the library, so we can "safely" lose the pointer */
@@ -212,9 +221,21 @@ void thread_update(struct thread_args *args, SDL_Texture *texture,
 	void *pixels;
 	int pitch;
 
+	/* Convert endianness and format */
+	uint16_t *src = args->vram;
+	uint32_t *dst = buffer;
+
+	for(size_t n = 0; n < args->width * args->height; n++)
+	{
+		uint16_t px = be16toh(*src++);
+		*dst++ = (px & 0xf800) << 8
+		       | (px & 0x07e0) << 5
+		       | (px & 0x001f) << 3;
+	}
+
 	SDL_LockTexture(texture, NULL, &pixels, &pitch);
 
-	SDL_UpdateTexture(texture, NULL, args->vram, 2 * args->width);
+	SDL_UpdateTexture(texture, NULL, buffer, 4 * args->width);
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);

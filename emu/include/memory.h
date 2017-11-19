@@ -25,7 +25,7 @@
 #define	MEMORY_DEFAULT_TEXT	(256 << 10)
 #define	MEMORY_DEFAULT_STACK	(256 << 10)
 #define	MEMORY_DEFAULT_DATA	(512 << 10)
-#define	MEMORY_DEFAULT_VRAM	(50048)
+#define	MEMORY_DEFAULT_VRAM	(327680)
 
 /*
 	memory_t structure
