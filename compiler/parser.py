@@ -36,6 +36,8 @@ class Parser(object):
         for token in self.lexer_gen:
             if token.typ is LexType.COMMENT:
                 pass  # Ignore comments
+            elif token.typ is LexType.ENDFILE:
+                pass  # Ignore end of file
 
             elif token.typ is LexType.NEWLINE:
                 try:
@@ -66,6 +68,7 @@ class Parser(object):
                                res[0].column))
                 return tuple(res)
             elif len(res) is not 0:
+                print(res)
                 raise ParserError("The stack is empty : couldn't find operand")
             else:
                 return ()

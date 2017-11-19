@@ -12,7 +12,7 @@ class Lexer(object):
     Prend une chaine de caractères encodées dans un langage pre-assembleur et
     génére des tokens en fonctions des operandes, et des valeures"""
 
-    def __init__(self):
+    def __init__(self, possible_transitions):
         token_specification = {
 
 
@@ -40,6 +40,8 @@ class Lexer(object):
             LexType.ENDFILE:  r'$',
         }
 
+        self.possible_transitions = possible_transitions
+
         tok_regex = '|'.join('(?P<%s>%s)' % (str(name).split(".")[1], re)
                              for name, re in token_specification.items())
 
@@ -50,7 +52,14 @@ class Lexer(object):
                                 "le": "v"}
         }
 
-    def lex(self, code):
+        self.includes = set()
+
+    def lex(self, code, name="", directory="."):
+
+        if name in self.includes:
+            return
+
+        self.includes.add(name)
 
         # Temporaire :
         # code = sub(code, inverse_possible_transition)
@@ -86,7 +95,17 @@ class Lexer(object):
                 yield Token(LexType.LABEL, value, line_num, column)
 
             elif kind is LexType.INCLUDE:
-                raise NotImplementedError()
+                value = value[9:]
+                filename = f"{directory}/{value}.s"
+                with open(filename, "r") as f:
+                    s = f.read()
+
+                    for new, olds in self.possible_transitions.items():
+                        olds.sort(reverse=True, key=lambda x: len(x))
+                        s = re.sub("(" + "|".join(olds) + ")", new, s)
+
+                    for token in self.lex(s, name=value, directory=directory):
+                        yield token
 
             else:
                 column = match.start() - line_start

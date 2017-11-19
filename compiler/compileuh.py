@@ -158,7 +158,7 @@ def count_operations(c, it):
     return c
 
 
-def compile_asm(s, *, back_end=MemonicBackEnd, generate_tree=False):
+def compile_asm(s, *, back_end=MemonicBackEnd, generate_tree=False, directory="."):
 
     # Start by translating .p to .ps
     for new, olds in possible_transition.items():
@@ -166,8 +166,8 @@ def compile_asm(s, *, back_end=MemonicBackEnd, generate_tree=False):
         s = re.sub("(" + "|".join(olds) + ")", new, s)
 
     # tokenize the pre-asm
-    lexer = Lexer()
-    gen_lex = lexer.lex(s)
+    lexer = Lexer(possible_transition)
+    gen_lex = lexer.lex(s, directory=directory)
 
     # parse to convert in asm
     parser = Parser(gen_lex, possible_transition, asr_specs, type_specs)

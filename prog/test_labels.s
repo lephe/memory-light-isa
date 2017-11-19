@@ -2,3 +2,6 @@
 subroutine:
 	let r1 0
 	jump subroutine
+
+
+	call subroutine
