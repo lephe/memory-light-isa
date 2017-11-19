@@ -52,8 +52,16 @@ if __name__ == "__main__":
         if args.back_end is None:
             args.back_end = LabelsClearTextBackEnd
 
+        fullpath = args.filename.rsplit("/", 1)
+
+        if len(fullpath) == 1:
+            directory = "."
+        else:
+            directory = fullpath[0]
+
         out = compile_asm(s, back_end=args.back_end,
-                          generate_tree=args.huffman)
+                          generate_tree=args.huffman,
+                          directory=directory)
 
         # print(args.output)
         # print(args.filename.rsplit(".", maxsplit=1))

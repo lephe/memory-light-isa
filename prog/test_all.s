@@ -1,7 +1,7 @@
 let r4 2
     add r1 r2
     add r1 r2
-    push 64 r4
+    push 1 r4
     sub r3 5
     getctr sp r0
     cmp r3 r5
@@ -82,3 +82,6 @@ return  ; j'aime les poneys
 xor    r0 r0 r0
 xor   r0 r0 10000
 xor   r0 r0 1023011123000
+
+test:
+	call test 
