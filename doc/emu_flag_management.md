@@ -1,26 +1,29 @@
 # Emulator Flag Management
 
-Here is how the emulator calculates its flags (without using double-word
-values, which would be 128-bit large). The following table does not distinguish
-between registers and constants because both behave in the same way.
+Here is how the emulator calculates the flags after executing an arithmetical
+or logical instruction (without using double-word values). Instrctions that are
+not listed do not change any flag.
 
-    Operation        Result         Z         N          C
-    ------------------------------------------------------------------------
-    add x y          r = x + y      r == 0    s(r) < 0   y && u(x) >= -u(y)
-    sub x y          r = x - y      r == 0    s(r) < 0   u(x) < u(y)
-    cmp x y          r = x - y      r == 0    s(r) < 0   u(x) < u(y)
-    shift left x n   r = u(x) << n  r == 0    s(r) < 0   (u(x) >> (n-1)) & 1
-    shift right x n  r = u(x) >> n  r == 0    s(r) < 0   s(u(x) << (n-1)) < 0
-    or x y           r = x | y      r == 0    s(r) < 0   0
-    and x y          r = x & y      r == 0    s(r) < 0   0
-    xor x y          r = x ^ y      r == 0    s(r) < 0   0
-    asr3 r x n       r = s(x) >> n  r == 0    s(r) < 0   (u(x) >> (n-1)) & 1
+The Z and N flags are always defined as follows (`r` being the result of the
+operation):
+
+    Z    r == 0
+    N    s(r) < 0
+
+The carry and overflow flags are defined by the following table. (All
+comparisons are signed, except when operands are surrounded by "u()").
+
+    Operation           C                     V
+    -----------------------------------------------------------------------
+    add x y             y && u(x) >= u(-y)    x ^ y >= 0 && x ^ (x + y) < 0
+    sub x y             u(x) < u(y)           x ^ y <  0 && x ^ (x - y) < 0
+    cmp x y             u(x) < u(y)           x ^ y <  0 && x ^ (x - y) < 0
+    shift left x n      (x >> (n-1)) & 1      (not changed)
+    shift right x n     (x << (n-1)) < 0      (not changed)
+    or x y              0                     (not changed)
+    and x y             0                     (not changed)
+    xor x y             0                     (not changed)
+    asr3 r x n          (x >> (n-1)) & 1      (not changed)
 
 Three-operand instructions perform the same calculations as their two-operand
 counterparts (ie, the calculate the same `r`) and thus have the same behavior.
-
-    Legend:
-    s(x)   Signed interpretation of x
-    u(x)   Unsigned interpretation of x
-
-All instructions that are not listed do not affect any flag.

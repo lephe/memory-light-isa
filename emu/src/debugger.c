@@ -245,7 +245,8 @@ static void draw_reg(void)
 	/* Processor flags */
 
 	mvwprintw(wreg, 16, 3, "Flags:");
-	mvwprintw(wreg, 17, 3, "Z=%d N=%d C=%d", cpu->z, cpu->n, cpu->c);
+	mvwprintw(wreg, 17, 3, "Z=%d N=%d C=%d V=%d",
+		cpu->z, cpu->n, cpu->c, cpu->v);
 
 	wrefresh(wreg);
 }

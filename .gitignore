@@ -10,3 +10,6 @@ prog/*.bin
 prog/*.txt
 prog/*.debug
 
+# Font converter executable
+prog/font-convert
+

@@ -22,9 +22,10 @@
 #include <stdint.h>
 
 /* Default memory geometry, four segments of 1M each */
-#define	MEMORY_DEFAULT_MEMSIZE	(4 << 20)
-#define	MEMORY_DEFAULT_STACK	(2 << 20)
-#define	MEMORY_DEFAULT_VRAMSIZE	(1 << 20)
+#define	MEMORY_DEFAULT_TEXT	(256 << 10)
+#define	MEMORY_DEFAULT_STACK	(256 << 10)
+#define	MEMORY_DEFAULT_DATA	(512 << 10)
+#define	MEMORY_DEFAULT_VRAM	(50048)
 
 /*
 	memory_t structure
@@ -34,21 +35,20 @@
 
 	The emulated looks like this :
 	     0000: Program          ^
-	           Stack            |  memsize
-	    stack: Video memory     |
-	     data: Data segment     v
+	     text: Stack            |  memsize
+	    stack: Data segment     |
+	     vral: Video memory     v
 
-	The stack grows down in the address space, which is why the stack
-	attribute actually represents the beginning address of the video
-	memory.
+	The stack grows down in the address space, so the 'stack' attribute
+	represents the beginning address of the data segment.
 */
 typedef struct
 {
 	uint64_t memsize;	/* Total memory size */
-	uint64_t text;		/* Text segment size */
+	uint64_t text;		/* Size of text segment */
 	uint64_t stack;		/* Bottom stack address */
-	uint64_t vramsize;	/* Size of the video memory segment */
-	uint64_t data;		/* Top address of the data segment */
+	uint64_t data;		/* Address of the data segment */
+	uint64_t vram;		/* Address of the vram segment */
 
 	/* Pointer to actual chunk of data, of size memsize */
 	uint64_t *mem;
@@ -68,12 +68,14 @@ typedef struct
 	Some parameters may not be provided (when 0 is passed), in this case
 	the default values are used (see the macros above).
 
-	@arg	memsize		Requested total memory size
-	@arg	stack		Request bottom stack address
-	@arg	vramsize	Request video memory size
-	@returns		A new memory object. Calls exit(1) on error.
+	@arg	text	Requested text segment size
+	@arg	stack	Requested stack segment size
+	@arg	data	Requested data segment size
+	@arg	vram	Requested video memory size
+	@returns	A new memory object. Program terminates on error.
 */
-memory_t *memory_new(uint64_t memsize, uint64_t stack, uint64_t vramsize);
+memory_t *memory_new(uint64_t text, uint64_t stack, uint64_t data,
+	uint64_t vram);
 
 /*
 	memory_load() -- load a program into memory

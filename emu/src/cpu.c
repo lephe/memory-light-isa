@@ -17,8 +17,9 @@ cpu_t *cpu_new(memory_t *mem)
 	/* Initialize registers and flags */
 	for(int i = 0; i < 8; i++) cpu->r[i] = 0x0000000000000000l;
 	cpu->z = 0;
-	cpu->c = 0;
 	cpu->n = 0;
+	cpu->c = 0;
+	cpu->v = 0;
 
 	cpu->h = 0;
 	cpu->m = 0;
@@ -27,7 +28,7 @@ cpu_t *cpu_new(memory_t *mem)
 	cpu->ptr[PC] = 0x0000000000000000l;
 	cpu->ptr[SP] = mem->stack;
 	cpu->ptr[A0] = mem->data;
-	cpu->ptr[A1] = mem->data;
+	cpu->ptr[A1] = mem->vram;
 
 	return cpu;
 }
@@ -55,16 +56,39 @@ static size_t counts[DISASM_INS_COUNT] = { 0 };
 	set_flags()
 	A quick routine to set the flags of the processor.
 
-	@arg	cpu	The CPU you're working with
-	@arg	result	The result of the operation, for flags Z and N
-	@arg	carry	The value of the carry flag; you must set it yourself,
-			or provide -1 if you don't want to change it
+	@arg	cpu		The CPU you're working with
+	@arg	result		Calculation result, for flags Z and N
+	@arg	carry		Carry flag (or -1 for no change)
+	@arg	overflow	Overflow flag (or -1 for no change)
 */
-void set_flags(cpu_t *cpu, int64_t result, int carry)
+static void set_flags(cpu_t *cpu, int64_t result, int carry, int overflow)
 {
 	cpu->z = (result == 0);
 	cpu->n = (result < 0);
 	if(carry >= 0) cpu->c = carry;
+	if(overflow >= 0) cpu->v = overflow;
+}
+
+/*
+	carry_add()
+	Quick calculate and return carry of x + y.
+*/
+static int carry_add(uint64_t x, uint64_t y)
+{
+	/* Carry happens when x >= 2^64 - y, which is pretty much the same as
+	   -y, except for y = 0 where the carry happens when calculating -y */
+	return y && (x >= -y);
+}
+
+/*
+	vflow_add()
+	Quick calculate and return overflow of x + y.
+*/
+static int vflow_add(int64_t x, int64_t y)
+{
+	/* Overflow happens when both operands have the same sign, but the
+	   result changes sign due to overflow */
+	return ((x ^ y) >= 0) && ((x ^ (x + y)) < 0);
 }
 
 /* A useful shorthand that calls disasm_*() functions */
@@ -76,9 +100,11 @@ static void add2(cpu_t *cpu)
 {
 	uint rd = get(reg), rs = get(reg);
 
-	int carry = cpu->r[rs] && (cpu->r[rd] >= -cpu->r[rs]);
+	int carry	= carry_add(cpu->r[rd], cpu->r[rs]);
+	int overflow	= vflow_add(cpu->r[rd], cpu->r[rs]);
+
 	cpu->r[rd] += cpu->r[rs];
-	set_flags(cpu, cpu->r[rd], carry);
+	set_flags(cpu, cpu->r[rd], carry, overflow);
 }
 
 static void add2i(cpu_t *cpu)
@@ -86,18 +112,22 @@ static void add2i(cpu_t *cpu)
 	uint rd = get(reg);
 	uint64_t cst = get(lconst, NULL);
 
-	int carry = cst && cpu->r[rd] >= -cst;
+	int carry	= carry_add(cpu->r[rd], cst);
+	int overflow	= vflow_add(cpu->r[rd], cst);
+
 	cpu->r[rd] += cst;
-	set_flags(cpu, cpu->r[rd], carry);
+	set_flags(cpu, cpu->r[rd], carry, overflow);
 }
 
 static void sub2(cpu_t *cpu)
 {
 	uint rd = get(reg), rs = get(reg);
 
-	int carry = cpu->r[rd] < cpu->r[rs];
+	int borrow	= cpu->r[rd] < cpu->r[rs];
+	int overflow	= vflow_add(cpu->r[rd], -cpu->r[rs]);
+
 	cpu->r[rd] -= cpu->r[rs];
-	set_flags(cpu, cpu->r[rd], carry);
+	set_flags(cpu, cpu->r[rd], borrow, overflow);
 }
 
 static void sub2i(cpu_t *cpu)
@@ -105,15 +135,21 @@ static void sub2i(cpu_t *cpu)
 	uint rd = get(reg);
 	uint64_t cst = get(lconst, NULL);
 
-	int carry = cpu->r[rd] < cst;
+	int borrow	= cpu->r[rd] < cst;
+	int overflow	= vflow_add(cpu->r[rd], -cst);
+
 	cpu->r[rd] -= cst;
-	set_flags(cpu, cpu->r[rd], carry);
+	set_flags(cpu, cpu->r[rd], borrow, overflow);
 }
 
 static void cmp(cpu_t *cpu)
 {
 	uint rm = get(reg), rn = get(reg);
-	set_flags(cpu, cpu->r[rm] - cpu->r[rn], cpu->r[rm] < cpu->r[rn]);
+
+	int borrow	= cpu->r[rm] < cpu->r[rn];
+	int overflow	= vflow_add(cpu->r[rm], -cpu->r[rn]);
+
+	set_flags(cpu, cpu->r[rm] - cpu->r[rn], borrow, overflow);
 }
 
 static void cmpi(cpu_t *cpu)
@@ -121,7 +157,10 @@ static void cmpi(cpu_t *cpu)
 	uint rm = get(reg);
 	int64_t cst = get(aconst, NULL);
 
-	set_flags(cpu, cpu->r[rm] - cst, cpu->r[rm] < (uint64_t)cst);
+	int carry	= cpu->r[rm] < (uint64_t)cst;
+	int overflow	= vflow_add(cpu->r[rm], -cst);
+
+	set_flags(cpu, cpu->r[rm] - cst, carry, overflow);
 }
 
 static void let(cpu_t *cpu)
@@ -152,7 +191,7 @@ static void shift(cpu_t *cpu)
 		cpu->r[rd] <<= shift;
 	}
 
-	cpu->z = (cpu->r[rd] == 0);
+	set_flags(cpu, cpu->r[rd], -1, -1);
 }
 
 static void readze(cpu_t *cpu)
@@ -187,9 +226,8 @@ static void jumpif(cpu_t *cpu)
 	uint64_t instruction_base = cpu->ptr[PC] - 4;
 
 	int conds[] = {
-		cpu->z,		!cpu->z,		!cpu->n && !cpu->z,
-		cpu->n,		!cpu->c && !cpu->z,	!cpu->c,
-		cpu->c,		cpu->c || cpu->z,
+		cpu->z, !cpu->z, !cpu->z && (cpu->n == cpu->v),
+		cpu->n != cpu->v, !cpu->c && !cpu->z, !cpu->c, cpu->c, cpu->v,
 	};
 	uint cnd = get(cond);
 	int64_t diff = get(addr, NULL);
@@ -204,7 +242,7 @@ static void or2(cpu_t *cpu)
 {
 	uint rd = get(reg), rs = get(reg);
 	cpu->r[rd] |= cpu->r[rs];
-	set_flags(cpu, cpu->r[rd], -1);
+	set_flags(cpu, cpu->r[rd], 0, -1);
 }
 
 static void or2i(cpu_t *cpu)
@@ -212,14 +250,14 @@ static void or2i(cpu_t *cpu)
 	uint rd = get(reg);
 	uint64_t cst = get(lconst, NULL);
 	cpu->r[rd] |= cst;
-	set_flags(cpu, cpu->r[rd], -1);
+	set_flags(cpu, cpu->r[rd], 0, -1);
 }
 
 static void and2(cpu_t *cpu)
 {
 	uint rd = get(reg), rs = get(reg);
 	cpu->r[rd] &= cpu->r[rs];
-	set_flags(cpu, cpu->r[rd], -1);
+	set_flags(cpu, cpu->r[rd], 0, -1);
 }
 
 static void and2i(cpu_t *cpu)
@@ -227,7 +265,7 @@ static void and2i(cpu_t *cpu)
 	uint rd = get(reg);
 	uint64_t cst = get(lconst, NULL);
 	cpu->r[rd] &= cst;
-	set_flags(cpu, cpu->r[rd], -1);
+	set_flags(cpu, cpu->r[rd], 0, -1);
 }
 
 static void write(cpu_t *cpu)
@@ -268,7 +306,7 @@ static void push(cpu_t *cpu)
 	cpu->ptr[SP] -= size;
 
 	/* TODO: Use a proper exception when raising stack overflow */
-	if(cpu->ptr[SP] < cpu->mem->stack) fatal("Stack overflow (SP = %lu) "
+	if(cpu->ptr[SP] < cpu->mem->text) fatal("Stack overflow (SP = %lu) "
 		"at PC = %lu\n", cpu->ptr[SP], cpu->ptr[PC]);
 	memory_write(cpu->mem, cpu->ptr[SP], cpu->r[rs], size);
 
@@ -284,8 +322,12 @@ static void _return(cpu_t *cpu)
 static void add3(cpu_t *cpu)
 {
 	uint rd = get(reg), rm = get(reg), rn = get(reg);
+
+	int carry	= carry_add(cpu->r[rm], cpu->r[rn]);
+	int overflow	= vflow_add(cpu->r[rm], cpu->r[rn]);
+
 	cpu->r[rd] = cpu->r[rm] + cpu->r[rn];
-	set_flags(cpu, cpu->r[rd], cpu->r[rn] && cpu->r[rm] >= -cpu->r[rn]);
+	set_flags(cpu, cpu->r[rd], carry, overflow);
 }
 
 static void add3i(cpu_t *cpu)
@@ -293,16 +335,22 @@ static void add3i(cpu_t *cpu)
 	uint rd = get(reg), rs = get(reg);
 	uint64_t cst = get(lconst, NULL);
 
+	int carry	= carry_add(cpu->r[rs], cst);
+	int overflow	= vflow_add(cpu->r[rs], cst);
+
 	cpu->r[rd] = cpu->r[rs] + cst;
-	set_flags(cpu, cpu->r[rd], cst && cpu->r[rs] >= -cst);
+	set_flags(cpu, cpu->r[rd], carry, overflow);
 }
 
 static void sub3(cpu_t *cpu)
 {
 	uint rd = get(reg), rm = get(reg), rn = get(reg);
 
+	int borrow	= cpu->r[rm] < cpu->r[rn];
+	int overflow	= vflow_add(cpu->r[rm], -cpu->r[rn]);
+
 	cpu->r[rd] = cpu->r[rm] - cpu->r[rn];
-	set_flags(cpu, cpu->r[rd], cpu->r[rm] < cpu->r[rn]);
+	set_flags(cpu, cpu->r[rd], borrow, overflow);
 }
 
 static void sub3i(cpu_t *cpu)
@@ -310,15 +358,18 @@ static void sub3i(cpu_t *cpu)
 	uint rd = get(reg), rs = get(reg);
 	uint64_t cst = get(lconst, NULL);
 
+	int borrow	= cpu->r[rs] < cst;
+	int overflow	= vflow_add(cpu->r[rs], -cst);
+
 	cpu->r[rd] = cpu->r[rs] - cst;
-	set_flags(cpu, cpu->r[rd], cpu->r[rs] < cst);
+	set_flags(cpu, cpu->r[rd], borrow, overflow);
 }
 
 static void or3(cpu_t *cpu)
 {
 	uint rd = get(reg), rm = get(reg), rn = get(reg);
 	cpu->r[rd] = cpu->r[rm] | cpu->r[rn];
-	set_flags(cpu, cpu->r[rd], -1);
+	set_flags(cpu, cpu->r[rd], 0, -1);
 }
 
 static void or3i(cpu_t *cpu)
@@ -326,14 +377,14 @@ static void or3i(cpu_t *cpu)
 	uint rd = get(reg), rs = get(reg);
 	uint64_t cst = get(lconst, NULL);
 	cpu->r[rd] = cpu->r[rs] | cst;
-	set_flags(cpu, cpu->r[rd], -1);
+	set_flags(cpu, cpu->r[rd], 0, -1);
 }
 
 static void and3(cpu_t *cpu)
 {
 	uint rd = get(reg), rm = get(reg), rn = get(reg);
 	cpu->r[rd] = cpu->r[rm] & cpu->r[rn];
-	set_flags(cpu, cpu->r[rd], -1);
+	set_flags(cpu, cpu->r[rd], 0, -1);
 }
 
 static void and3i(cpu_t *cpu)
@@ -341,14 +392,14 @@ static void and3i(cpu_t *cpu)
 	uint rd = get(reg), rs = get(reg);
 	uint64_t cst = get(lconst, NULL);
 	cpu->r[rd] = cpu->r[rs] & cst;
-	set_flags(cpu, cpu->r[rd], -1);
+	set_flags(cpu, cpu->r[rd], 0, -1);
 }
 
 static void xor3(cpu_t *cpu)
 {
 	uint rd = get(reg), rm = get(reg), rn = get(reg);
 	cpu->r[rd] = cpu->r[rm] ^ cpu->r[rn];
-	set_flags(cpu, cpu->r[rd], -1);
+	set_flags(cpu, cpu->r[rd], 0, -1);
 }
 
 static void xor3i(cpu_t *cpu)
@@ -356,15 +407,17 @@ static void xor3i(cpu_t *cpu)
 	uint rd = get(reg), rs = get(reg);
 	uint64_t cst = get(lconst, NULL);
 	cpu->r[rd] = cpu->r[rs] ^ cst;
-	set_flags(cpu, cpu->r[rd], -1);
+	set_flags(cpu, cpu->r[rd], 0, -1);
 }
 
 static void asr3(cpu_t *cpu)
 {
 	uint rd = get(reg), rs = get(reg), shift = get(shift);
+	int carry = ((int64_t)cpu->r[rs] >> (shift - 1)) & 1;
+
 	int64_t result = (int64_t)cpu->r[rs] >> shift;
-	cpu->z = !result;
 	cpu->r[rd] = (uint64_t)result;
+	set_flags(cpu, result, carry, -1);
 }
 
 /* TODO - Use a proper debugger-related exception handling scheme for these */
