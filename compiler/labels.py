@@ -104,7 +104,7 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
                         label = x.typed_args[1].raw_value
 
                     if label not in label_dict:
-                        raise BackEndError("Undefined label")
+                        raise BackEndError(f"Undefined label '{label}'")
 
                     i = label_dict[label]
 
@@ -124,7 +124,7 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
                     label = x.typed_args[0].raw_value
 
                     if label not in label_dict:
-                        raise BackEndError("Undefined label")
+                        raise BackEndError(f"Undefined label '{label}'")
 
                     i = label_dict[label]
 
