@@ -7,9 +7,17 @@ emu/emu
 
 # Compiled programs
 prog/*.bin
-prog/*.txt
+prog/*.obj
 prog/*.debug
 
 # Font converter executable
 prog/font-convert
+
+# Object and binary files from the subject simu.src
+subject/simu.src/*.o
+subject/simu
+
+# Chip8 compiled programs
+chip8/*.bin
+chip8/*.obj
 
