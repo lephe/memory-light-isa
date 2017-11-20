@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import re
-
+import sys
 from .enums import Token, LexType
 from .errors import TokenError
 from .util import Stack, huffman, sub
@@ -32,6 +32,8 @@ class Lexer(object):
             # LABELS/IMPORTS
             LexType.LABEL:      r'\b[a-zA-Z_][a-z_A-Z0-9]*:?',
             LexType.INCLUDE:    r'\.include [a-zA-z_][a-z_A-Z0-9]*\b',
+            LexType.CONS:       r'.const',
+            LexType.BINARY:     r'#[01]+',
 
             # Tokenizer stuff
             LexType.NEWLINE:  r'\n',
@@ -80,7 +82,7 @@ class Lexer(object):
                 column = match.start() - line_start
                 line_start = match.end()
                 line_num += 1
-                yield Token(LexType.NEWLINE, None, line_num-1, column)
+                yield Token(LexType.NEWLINE, None, name, line_num-1, column)
 
             elif kind is LexType.SKIP:
                 pass
@@ -92,27 +94,36 @@ class Lexer(object):
             elif kind is LexType.LABEL:
                 column = match.start() - line_start
                 # yield Token(LexType.OPERATION, "label", line_num, column)
-                yield Token(LexType.LABEL, value, line_num, column)
+                yield Token(LexType.LABEL, value, name, line_num, column)
+
+            elif kind is LexType.CONS:
+                column = match.start() - line_start
+                yield Token(LexType.OPERATION, "cons", name, line_num, column)
 
             elif kind is LexType.INCLUDE:
                 value = value[9:]
-                filename = f"{directory}/{value}.s"
-                with open(filename, "r") as f:
-                    s = f.read()
+                filename = f"{directory}/{value}"
+                try:
+                    with open(filename, "r") as f:
+                        s = f.read()
 
-                    for new, olds in self.possible_transitions.items():
-                        olds.sort(reverse=True, key=lambda x: len(x))
-                        s = re.sub("(" + "|".join(olds) + ")", new, s)
+                        for new, olds in self.possible_transitions.items():
+                            olds.sort(reverse=True, key=lambda x: len(x))
+                            s = re.sub("(" + "|".join(olds) + ")", new, s)
 
-                    for token in self.lex(s, name=value, directory=directory):
-                        yield token
+                        for token in self.lex(s, name=value, directory=directory):
+                            yield token
+                except FileNotFoundError as e:
+                    print(f"/!\ Lexer Error in file \"{filename}\" line {line_num}:")
+                    print(f"/!\       {e}")
+                    sys.exit(1)
 
             else:
                 column = match.start() - line_start
-                yield Token(kind, value, line_num, column)
+                yield Token(kind, value, name, line_num, column)
 
             if kind is LexType.ENDFILE:
-                yield Token(LexType.ENDFILE, None, line_num, 0)
+                yield Token(LexType.ENDFILE, None, name, line_num, 0)
 
     def lex_alias(self, kind, value):
         if kind in self.aliases:

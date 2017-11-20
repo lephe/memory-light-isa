@@ -47,7 +47,7 @@ class MemonicBackEnd(BackEnd):
     write_mode = "w+"
 
     def handle_line(self, line):
-        funcname, typed_args, linenumber = line
+        funcname, typed_args, linenumber = line.funcname, line.typed_args, line.linenumber
 
         if funcname in ["jumpl", "calll", "jumpifl"]:
             funcname = funcname[:-1]
@@ -95,7 +95,7 @@ class CleartextBitcodeBackEnd(BackEnd):
             else:
                 space = True
 
-        funcname, typed_args, linenumber = line
+        funcname, typed_args, linenumber = line.funcname, line.typed_args, line.linenumber
 
         realise_line = [self.huffman_tree[funcname]]
 

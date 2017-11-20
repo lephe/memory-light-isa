@@ -61,7 +61,8 @@ if __name__ == "__main__":
 
         out = compile_asm(s, back_end=args.back_end,
                           generate_tree=args.huffman,
-                          directory=directory)
+                          directory=directory,
+                          filename=args.filename)
 
         # print(args.output)
         # print(args.filename.rsplit(".", maxsplit=1))

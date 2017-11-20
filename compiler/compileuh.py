@@ -32,7 +32,8 @@ possible_transition = {
     "return": ["return"],
     "asr":    ["asr3"],
     "pop":    ["pop"],
-    "label":  ["label"]}
+    "label":  ["label"],
+    "cons":   ["cons"]}
 
 
 VT = ValueType
@@ -44,7 +45,8 @@ type_specs = {
     LexType.CONDITION:  [VT.CONDITION],
     LexType.MEMCOUNTER: [VT.MEMCOUNTER],
     LexType.REGISTER:   [VT.REGISTER],
-    LexType.LABEL:      [VT.LABEL]
+    LexType.LABEL:      [VT.LABEL],
+    LexType.BINARY:     [VT.BINARY]
 }
 
 asr_specs = {
@@ -103,7 +105,8 @@ asr_specs = {
     "reserved2":   (),
     "reserved3":   (),
 
-    "label":       (VT.LABEL,)}
+    "label":       (VT.LABEL,),
+    "cons":        (VT.UCONSTANT, VT.BINARY)}
 
 del VT
 
@@ -158,7 +161,7 @@ def count_operations(c, it):
     return c
 
 
-def compile_asm(s, *, back_end=MemonicBackEnd, generate_tree=False, directory="."):
+def compile_asm(s, *, back_end=MemonicBackEnd, generate_tree=False, directory=".", filename=""):
 
     # Start by translating .p to .ps
     for new, olds in possible_transition.items():
@@ -167,7 +170,7 @@ def compile_asm(s, *, back_end=MemonicBackEnd, generate_tree=False, directory=".
 
     # tokenize the pre-asm
     lexer = Lexer(possible_transition)
-    gen_lex = lexer.lex(s, directory=directory)
+    gen_lex = lexer.lex(s, name=filename, directory=directory)
 
     # parse to convert in asm
     parser = Parser(gen_lex, possible_transition, asr_specs, type_specs)

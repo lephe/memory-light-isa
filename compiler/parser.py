@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import collections
+import sys
 
 from .util import Stack, Queue, inv_dict_list
 from .enums import LexType, ValueType, Value, Line, NB_REG
@@ -43,9 +44,9 @@ class Parser(object):
                 try:
                     self.handle_one()
                 except ParserError as e:
-                    print(f"/!\ Parser Error on line {token.line}:")
+                    print(f"/!\ Parser Error in file \"{token.filename}\" line {token.line}:")
                     print(f"/!\       {e}")
-                    return None
+                    sys.exit(1)
 
                 while not self.out_stack.is_empty():
                     yield self.out_stack.pop()
@@ -64,8 +65,8 @@ class Parser(object):
                 break
         else:
             if len(res) is 1 and res[0].typ is LexType.LABEL:
-                res.push(Token(LexType.OPERATION, "label", res[0].line,
-                               res[0].column))
+                res.push(Token(LexType.OPERATION, "label", res[0].filename,
+                               res[0].line, res[0].column))
                 return tuple(res)
             elif len(res) is not 0:
                 print(res)
@@ -115,7 +116,7 @@ right range")
             typed_args.append(typed_value)
 
         typed_args = tuple(typed_args)
-        self.out_stack.push(Line(funcname, typed_args, res[0].line))
+        self.out_stack.push(Line(funcname, typed_args, res[0].line, res[0].filename))
 
     def read_memcounter(self, value):
         return value
@@ -155,3 +156,6 @@ right range")
 
     def read_label(self, value):
         return value
+
+    def read_binary(self, value):
+        return value[1:]

@@ -3,9 +3,9 @@ import enum
 import collections
 import math
 
-Token = collections.namedtuple('Token', ['typ', 'value', 'line', 'column'])
+Token = collections.namedtuple('Token', ['typ', 'value', 'filename', 'line', 'column'])
 Value = collections.namedtuple("Value", ("typ", "raw_value"))
-Line = collections.namedtuple("Line", ("funcname", "typed_args", "linenumber"))
+Line = collections.namedtuple("Line", ("funcname", "typed_args", "linenumber", "filename"))
 
 NB_REG = 8
 NB_BIT_REG = 3
@@ -25,6 +25,8 @@ class LexType(enum.Enum):
     NUMBER = enum.auto()
     LABEL = enum.auto()
     SKIP = enum.auto()
+    BINARY = enum.auto()
+    CONS = enum.auto()
     MISMATCH = enum.auto()
 
 
@@ -40,3 +42,4 @@ class ValueType(enum.Enum):
     REGISTER = enum.auto()
     LABEL = enum.auto()
     SIZE = enum.auto()
+    BINARY = enum.auto()
