@@ -1,9 +1,5 @@
 ; Main program
 
-	.include cpu.s
-	.include mem.s
-	.include rand.s
-
 main:
 	; PC = 0x200
 	leti	r1 0x200
@@ -24,7 +20,7 @@ _von_neumann:
 _0000:
 	; Halt program (?)
 	cmpi	r4 0x0000
-	jumpif	eq _end
+	jumpif	eq _main_end
 
 _00e0:
 	; Clear screen
@@ -373,8 +369,16 @@ _bnnn:
 	call	cpu_setPC
 	jump	_von_neumann
 
+_cxnn:
+
 
 	; Not a very thrilling loop
 	jump	_von_neumann
-_end:
+
+_main_end:
 	jump	-13
+
+	.include cpu.s
+	.include mem.s
+	.include rand.s
+	.include util.s

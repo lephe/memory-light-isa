@@ -3,24 +3,6 @@
 ;	All of the colors in this module are in 16-bit format.
 ;---
 
-main:
-	leti	r1 0x2105
-	call	clear_screen
-
-	leti	r4 1
-
-_plot_one:
-	leti	r1 r4
-	leti	r2 1
-	leti	r3 0xdefa
-	call	plot
-
-	add2i	r4 2
-	cmpi	r4 11
-	jumpif	neq _plot_one
-
-	jump	-13
-
 ;	clear_screen()
 ;	Clears the whole screen in an efficient way.
 ;

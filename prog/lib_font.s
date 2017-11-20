@@ -3,8 +3,6 @@
 ;	No dependencies. 16-bit colors.
 ;---
 
-; WARNING: NOT TESTED YET!!
-
 ;	putc()
 ;	Puts a character on the screen; (x, y) is the coordinate of the top-
 ;	left corner.
@@ -28,13 +26,13 @@ putc:
 	; Get a pointer to the appropriate video RAM location
 	leti	r3 0x100000
 
-	; Add 160 * y
-	shift	left r2 5
+	; Add 160 * y (* 16)
+	shift	left r2 9
 	add2	r3 r2
 	shift	left r2 2
 	add2	r3 r2
 
-	; Add 16 * x
+	; Add x (* 16)
 	shift	left r1 4
 	add2	r3 r1
 
@@ -53,32 +51,82 @@ putc:
 	push	64 r5
 
 	leti	r5 7
-line:
+_putc_line:
 	leti	r3 5
 
-pixel:
+_putc_pixel:
 	readze	a0 1 r4
 	cmpi	r4 0
-	jumpif	z clear
-set:
+	jumpif	z _putc_clear
+_putc_set:
 	write	a1 16 r1
-	jump	pixel_end
-clear:
+	jump	_putc_pixel_end
+_putc_clear:
 	getctr	a1 r4
 	add2i	r4 16
 	setctr	a1 r4
-pixel_end:
+_putc_pixel_end:
 	sub2i	r3 1
-	jumpif	nz pixel
+	jumpif	nz _putc_pixel
+
+	leti	r3 155
+	shift	left r3 4
+	getctr	a1 r4
+	add2i	r4 r3
+	setctr	a1 r4
 
 	sub2i	r5 1
-	jumpif	nz line
+	jumpif	nz _putc_line
 
 	; Restore context and leave
 	pop	64 r5
 	pop	64 r4
 	setctr	a0 r2
 	setctr	a1 r0
+	return
+
+;	puts()
+;	Writes a zero-terminated string on the screen by repeatedly calling
+;	putc() for each of the characters.
+;
+;	@args	x, y, str
+;	@stack	color(16)
+puts:
+	pop	16 r0
+
+	push	64 r7
+	push	64 r6
+	push	64 r5
+	push	64 r4
+
+	let	r6 r0
+	getctr	a0 r4
+	push	64 r4
+	setctr	a0 r3
+
+	let	r4 r1
+	let	r5 r2
+
+_puts_one:
+	readze	a0 8 r3
+	cmpi	r3 0
+	jumpif	z _puts_end
+
+	let	r1 r4
+	let	r2 r5
+	add2i	r4 6
+	push	16 r6
+	call	putc
+	jump	_puts_one
+
+_puts_end:
+	pop	64 r4
+	setctr	a0 r4
+	pop	64 r4
+	pop	64 r5
+	pop	64 r6
+	pop	64 r7
+	return
 
 ; Here be dragons (fonts)
 ; Encoding:
@@ -99,7 +147,7 @@ pixel_end:
 font_lea:
 	getctr	pc r0
 	; Add the size of this routine
-	add2i	r0 35
+	add2i	r0 24
 	return
 
 font:

@@ -14,8 +14,9 @@ data segment.
     32928      256      Stack            557216
     33184      16       SP               557472
     -------------------------------------------------
-    33200      16      Key buffer        557488
+    33200      16       Key buffer       557488
     -------------------------------------------------
+    33216      32       RNG seed         557504
 
 The emulated file has to be loaded at address DATA + 0x200 (which is usually
 512k + 512) before starting emulation.
