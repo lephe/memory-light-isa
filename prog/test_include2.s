@@ -1,6 +1,6 @@
-jump main
+	jump main
 
-.include test_include
+.include test_include.s
 
 main:
 	let r1 1000

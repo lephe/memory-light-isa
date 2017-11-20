@@ -97,6 +97,13 @@ class CleartextBitcodeBackEnd(BackEnd):
 
         funcname, typed_args, linenumber = line.funcname, line.typed_args, line.linenumber
 
+        if funcname == "const":
+            n = typed_args[0].raw_value
+            s = typed_args[1].raw_value
+
+            self.out_queue.push(s)
+            return None
+
         realise_line = [self.huffman_tree[funcname]]
 
         for typ, raw_value in typed_args:

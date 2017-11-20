@@ -33,7 +33,7 @@ possible_transition = {
     "asr":    ["asr3"],
     "pop":    ["pop"],
     "label":  ["label"],
-    "cons":   ["cons"]}
+    "const":   ["const"]}
 
 
 VT = ValueType
@@ -106,7 +106,7 @@ asr_specs = {
     "reserved3":   (),
 
     "label":       (VT.LABEL,),
-    "cons":        (VT.UCONSTANT, VT.BINARY)}
+    "const":        (VT.UCONSTANT, VT.BINARY)}
 
 del VT
 

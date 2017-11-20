@@ -98,7 +98,7 @@ class Lexer(object):
 
             elif kind is LexType.CONS:
                 column = match.start() - line_start
-                yield Token(LexType.OPERATION, "cons", name, line_num, column)
+                yield Token(LexType.OPERATION, "const", name, line_num, column)
 
             elif kind is LexType.INCLUDE:
                 value = value[9:]
