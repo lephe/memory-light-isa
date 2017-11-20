@@ -31,7 +31,7 @@ class Lexer(object):
 
             # LABELS/IMPORTS
             LexType.LABEL:      r'\b[a-zA-Z_][a-z_A-Z0-9]*:?',
-            LexType.INCLUDE:    r'\.include [a-zA-z_][a-z_A-Z0-9]*\b',
+            LexType.INCLUDE:    r'\.include [a-zA-z_][a-z_A-Z0-9\.]*\b',
             LexType.CONS:       r'.const',
             LexType.BINARY:     r'#[01]+',
 
