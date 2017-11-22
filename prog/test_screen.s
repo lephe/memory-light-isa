@@ -1,5 +1,11 @@
 ; Test: plotting some pixels on the screen
 
+	jump main
+
+	.include lib_draw.s
+	.include lib_font.s
+
+
 main:
 	leti	r1 0x2105
 	call	clear_screen
@@ -42,5 +48,3 @@ _str_lea:
 _str:
 	.const 112 #0100100001100101011011000110110001101111001011000010000001010111011011110111001001101100011001000010000100000000
 
-	.include lib_draw.s
-	.include lib_font.s
