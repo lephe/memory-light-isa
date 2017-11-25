@@ -15,33 +15,40 @@ _mult_next:
 
 	return
 
-; clear_screen()
-clear_screen:
-	; Load VRAM pointer and counter
-	leti	r0 0x100000
-	leti	r3 640
-	getctr	a0 r2
-	setctr	a0 r0
+; bcd(r1 = x) -> r0 = BCD representation of x (24 bits)
+bcd:
+	push	64 r4
+	push	64 r5
+	push	64 r6
 
-	let	r0 r1
-	shift	left r0 16
-	or2	r1 r0
+	leti	r4 0
+	leti	r5 3
+	leti	r6 r1
 
-	let	r0 r1
-	shift	left r0 32
-	or2	r1 r0
+_bcd_one:
+	; r0 = r6 / 10
+	let	r1 r6
+	leti	r2 0x199a
+	call	mult
+	shift	right r0 16
 
-_clear_screen_loop:
-	write	a0 64 r1
-	write	a0 64 r1
-	write	a0 64 r1
-	write	a0 64 r1
-	write	a0 64 r1
-	write	a0 64 r1
-	write	a0 64 r1
-	write	a0 64 r1
-	sub2i	r3 1
-	jumpif	nz _clear_screen_loop
+	; r1 = r6 % 10
+	shift	left r0 1
+	let	r1 r0
+	shift	left r0 2
+	add2	r1 r0
+	sub3	r1 r6 r1
 
-	setctr	a0 r2
+	; Add a digit to r4
+	shift	left r4 8
+	or2	r4 r1
+
+	let	r6 r0
+	sub2i	r5 1
+	jumpif	nz _bcd_one
+
+	let	r0 r4
+	pop	64 r4
+	pop	64 r5
+	pop	64 r6
 	return

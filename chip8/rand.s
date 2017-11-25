@@ -2,7 +2,7 @@
 
 ; srand(r1 = seed)
 srand:
-	leti	r0 557504
+	leti	r0 0x881c0 ; RNG seed
 	getctr	a0 r2
 	setctr	a0 r0
 	write	a0 32 r1
@@ -14,7 +14,7 @@ rand:
 	push	64 r7
 	push	64 r6
 
-	leti	r0 557504
+	leti	r0 0x881c0 ; RNG seed
 	getctr	a0 r6
 	setctr	a0 r0
 
@@ -24,7 +24,7 @@ rand:
 	add2i	r2 12345
 	and2i	r2 0xffffffff
 
-	leti	r0 557504
+	leti	r0 0x881c0 ; RNG seed
 	setctr	a0 r0
 	write	a0 32 r2
 

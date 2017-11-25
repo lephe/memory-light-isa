@@ -2,7 +2,7 @@
 
 ; mem_opcode(r1 = PC) -> r0 = 16-bit opcode taken from PC
 mem_opcode:
-	leti	r0 524288
+	leti	r0 0x80000 ; Start of memory
 	shift	left r1 3
 	add2	r0 r1
 
@@ -19,9 +19,9 @@ mem_dump:
 	call	cpu_getI
 	add3i	r1 r0 16
 	shift	left r0 3
-	add2i	r0 524288
+	add2i	r0 0x80000 ; Memory base
 
-	leti	r3 557056
+	leti	r3 0x88000 ; Register base
 
 	getctr	a0 r2
 	setctr	a0 r0
@@ -46,9 +46,9 @@ mem_load:
 	call	cpu_getI
 	add3i	r1 r0 16
 	shift	left r0 3
-	add2i	r0 524288
+	add2i	r0 0x80000 ; Memory base
 
-	leti	r3 557056
+	leti	r3 0x88000 ; Register base
 
 	getctr	a0 r2
 	setctr	a0 r0
