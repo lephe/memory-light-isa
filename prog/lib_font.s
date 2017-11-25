@@ -10,6 +10,10 @@
 ;	@args	x, y, c
 ;	@stack	color(16)
 putc:
+	; Quickly change coordinate system (before function starts)
+	leti	r0 122
+	sub3	r2 r0 r2
+
 	; Get a pointer to the glyph data like a boss. I know that I should
 	; save r1-r3, but I don't care that much (since it's font_lea)
 	push	64 r7

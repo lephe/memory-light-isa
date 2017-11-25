@@ -48,6 +48,8 @@ plot:
 	; r2 = y
 	; r3 = color
 	; Bit offset in VRAM area
+	leti	r0 127
+	sub3	r2 r0 r2
 	shift	left r2 5
 	add2	r1 r2
 	shift	left r2 2
