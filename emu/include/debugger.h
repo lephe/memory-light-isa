@@ -11,6 +11,7 @@
 
 #include <cpu.h>
 #include <memory.h>
+#include <ncurses.h>
 
 /*
 	debugger() -- run the text interface debugger
@@ -81,7 +82,7 @@ typedef enum
 	color_command	= color_cyan,
 	color_error	= color_red,
 	color_idle	= color_yellow,
-	color_break	= color_red,
+	color_break	= color_cyan,
 	color_halt	= color_green,
 
 	/* Disassembler */

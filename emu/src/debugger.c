@@ -6,8 +6,7 @@
 #include <cpu.h>
 #include <debugger.h>
 #include <disasm.h>
-
-/* TODO - Make the stack view a generic memory view */
+#include <breaks.h>
 
 /* Variables shared by the components of the debugger module */
 
@@ -39,25 +38,25 @@ static void draw_reg(void);
 static const char *help_string =
 "Available commands:\n"
 "  s <n>       Step <n> instructions (default 1)\n"
-//"  b           Manage breakpoints (try 'help b')\n"
+"  b           Manage breakpoints (try 'help b')\n"
 "  r           Run until breakpoint, halt or end of program\n"
 //"  d           Disassemble program (try 'help d')\n"
 "  m <addr>    Display memory at address <addr> (hexadecimal, without '0x')\n"
 "    :ptr      Display memory at given pointer (:pc, :sp, :a0, :a1)\n"
 "  c           Show counts of executed instructions so far\n"
 "  q           Quit debugger\n";
-/*static const char *help_string_b =
+static const char *help_string_b =
 "Manage breakpoints:\n"
 "  b           Show all configured breakpoints\n"
 "  b <addr>    Add a breakpoint at the given address\n"
 "  b - <addr>  Remove a breakpoint at the given address\n";
-static const char *help_string_d =
+/* static const char *help_string_d =
 "Disassemble program:\n"
 "  d           Disassemble at PC and follow PC during execution\n"
 "  d <addr>    Disassemble the given location and stay there when PC moves\n";
 */
 
-/* TODO - Show any memory, show stack, change program state, more? */
+/* TODO - Show stack, change program state, more? */
 
 /*
 	cmd_help_color() -- simple hack to color the command names
@@ -97,12 +96,11 @@ static void cmd_help(int argc, __attribute__((unused)) char **argv)
 {
 	if(argc == 1) cmd_help_color(help_string);
 
-/*	for(int i = 1; i < argc; i++)
+	for(int i = 1; i < argc; i++)
 	{
-		if(!strcmp(argv[i], "b")) debugger_help_log(help_string_b);
-		if(!strcmp(argv[i], "d")) debugger_help_log(help_string_d);
+		if(!strcmp(argv[i], "b")) cmd_help_color(help_string_b);
+//		if(!strcmp(argv[i], "d")) cmd_help_color(help_string_d);
 	}
-*/
 }
 
 static void cmd_run_cpu(int steps)
@@ -110,12 +108,22 @@ static void cmd_run_cpu(int steps)
 	cpu_t *cpu = debugger_cpu;
 	cpu->h = cpu->m = cpu->t = 0;
 
+	/* Switch to idle mode "by default" */
+	debugger_state = state_idle;
+
 	/* Also check when CPU reaches the end of the code */
 	while(cpu->ptr[PC] < debugger_mem->text && steps)
 	{
 		cpu_execute(cpu);
 		if(steps > 0) steps--;
 		if(cpu->h) break;
+
+		/* Also break if a breakpoint is reached */
+		if(break_has(cpu->ptr[PC]))
+		{
+			debugger_state = state_break;
+			break;
+		}
 	}
 
 	/* FIXME - We don't need to refresh the code panel now if
@@ -143,9 +151,34 @@ static void cmd_run(void)
 	cmd_run_cpu(-1);
 }
 
-/* static void debugger_break(void)
+static void cmd_break(int argc, char **argv)
 {
-} */
+	if(argc == 1)
+	{
+		break_show();
+		return;
+	}
+	if(argc > 3)
+	{
+		dbgerr("b: too much arguments (see 'help b')\n");
+		return;
+	}
+	if(argc == 3 && strcmp(argv[1], "-"))
+	{
+		dbgerr("b: invalid syntax (see 'help b')\n");
+		return;
+	}
+
+	uint64_t address;
+	int x = sscanf(argv[argc - 1], "%lx", &address);
+	if(x < 1)
+	{
+		dbgerr("b: invalid breakpoint address\n");
+		return;
+	}
+
+	(argc == 2) ? break_add(address) : break_remove(address);
+}
 
 static void cmd_mem(int argc, char **argv)
 {
@@ -197,6 +230,8 @@ static void cmd_counts(void)
 
 	if((DISASM_INS_COUNT & 7) != 7) dbglog("\n");
 }
+
+
 
 //---
 //	Debugger program
@@ -373,6 +408,7 @@ void debugger(const char *filename, cpu_t *cpu)
 		else if(!strcmp(argv[0], "q")) break;
 		else if(!strcmp(argv[0], "s")) cmd_step(argc, argv);
 		else if(!strcmp(argv[0], "r")) cmd_run();
+		else if(!strcmp(argv[0], "b")) cmd_break(argc, argv);
 		else if(!strcmp(argv[0], "m")) cmd_mem(argc, argv);
 		else if(!strcmp(argv[0], "c")) cmd_counts();
 		else dbgerr("unknown command '%s'\n", argv[0]);

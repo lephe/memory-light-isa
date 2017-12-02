@@ -134,17 +134,17 @@ _puts_end:
 
 ; Here be dragons (fonts)
 ; Encoding:
-;   - Each character (5 * 7) takes 35 bytes
+;   - Each character (5 * 7) takes 35 bits
 ;   - Each glyph is stored from top to bottom, then from left to right
 ;   - All ASCII characters are present (thus 128 * 35 = 4480), in order
-; Algorithm to draw a character (c, x0, y0, fg, bg):
+; Algorithm to draw a character (c, x0, y0, color):
 ;   y <- y0
 ;   Get a pointer to font + 35 * c
 ;   Repeat 7 times
 ;     x <- x0
 ;     Repeat 5 times
 ;       Fetch a bit
-;       If it's 1, plot fg at (x, y), otherwise plot bg at (x, y)
+;       If it's 1, plot color at (x, y), otherwise do nothing
 ;       x <- x + 1
 ;     y <- y + 1
 

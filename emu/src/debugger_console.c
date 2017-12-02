@@ -57,7 +57,7 @@ char *debugger_prompt(char ***args_ptr)
 		break;
 	case state_break:
 		wattron(wcli, COLOR_PAIR(color_break));
-		dbglog("break %% ");
+		dbglog("break%% ");
 		wattroff(wcli, COLOR_PAIR(color_break));
 		break;
 	case state_halt:

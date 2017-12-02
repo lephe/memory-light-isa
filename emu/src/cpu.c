@@ -476,6 +476,11 @@ void cpu_execute(cpu_t *cpu)
 	counts[opcode]++;
 
 	instructions[opcode](cpu);
+
+//	for(int i = 0; i < 8; i++)
+//	{
+//		cpu->r[i] = (((int64_t)cpu->r[i]) << 32) >> 32;
+//	}
 }
 
 /* cpu_counts() -- statistics about executed instructions */

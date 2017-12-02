@@ -37,7 +37,7 @@
 	     0000: Program          ^
 	     text: Stack            |  memsize
 	    stack: Data segment     |
-	     vral: Video memory     v
+	     vram: Video memory     v
 
 	The stack grows down in the address space, so the 'stack' attribute
 	represents the beginning address of the data segment.
