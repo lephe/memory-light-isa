@@ -6,6 +6,8 @@ from .errors import TokenError
 from .util import Stack, huffman, sub
 
 
+from collections import OrderedDict
+
 class Lexer(object):
     """ Code adapté depuis https://docs.python.org/3/library/re.html
 
@@ -13,39 +15,39 @@ class Lexer(object):
     génére des tokens en fonctions des operandes, et des valeures"""
 
     def __init__(self, possible_transitions):
-        token_specification = {
+        token_specification = OrderedDict()
 
 
-            # Operators
-            LexType.OPERATION: r'\b(?:add|sub|cmp|let|shift|readze|readse|' + \
-                               r'jump|or|and|write|call|setctr|getctr|push|' +\
-                               r'return|xor|asr|pop)\b',
+        # Operators
+        token_specification[LexType.OPERATION]  = r'\b(?:add|sub|cmp|let|shift|readze|readse|' + \
+                           r'jump|or|and|write|call|setctr|getctr|push|' +\
+                           r'return|xor|asr|pop)\b'
 
-            # Values
-            LexType.REGISTER:   r'\b(?:r|R)[0-9]+\b',
-            LexType.DIRECTION:  r'\b(?:left|right)\b',
-            LexType.NUMBER:     r'[+-]?\b(?:0x[0-9A-Fa-f]+|[0-9]+)\b',
-            LexType.COMMENT:    r';.*',
-            LexType.CONDITION:  r'\b(?:eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|v|le)\b',
-            LexType.MEMCOUNTER: r'\b(?:pc|sp|a0|a1)\b',
+        # Values
+        token_specification[LexType.COMMENT]     = r';(?:.|[ \t])*'
+        token_specification[LexType.REGISTER]    = r'\b(?:r|R)[0-9]+\b'
+        token_specification[LexType.DIRECTION]   = r'\b(?:left|right)\b'
+        token_specification[LexType.NUMBER]      = r'[+-]?\b(?:0x[0-9A-Fa-f]+|[0-9]+)\b'
+        token_specification[LexType.CONDITION]   = r'\b(?:eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|v|le)\b'
+        token_specification[LexType.MEMCOUNTER]  = r'\b(?:pc|sp|a0|a1)\b'
 
-            # LABELS/IMPORTS
-            LexType.LABEL:      r'\b[a-zA-Z_][a-z_A-Z0-9]*:?',
-            LexType.INCLUDE:    r'\.include [a-zA-z_][a-z_A-Z0-9\.]*\b',
-            LexType.CONS:       r'.const',
-            LexType.BINARY:     r'#[01]+',
+        # LABELS/IMPORTS
+        token_specification[LexType.LABEL]       = r'\b[a-zA-Z_][a-z_A-Z0-9]*:?'
+        token_specification[LexType.INCLUDE]     = r'\.include [a-zA-z_][a-z_A-Z0-9\.]*\b'
+        token_specification[LexType.CONS]        = r'.const'
+        token_specification[LexType.BINARY]      = r'#[01]+'
 
-            # Tokenizer stuff
-            LexType.NEWLINE:  r'\n',
-            LexType.SKIP:     r'[ \t]+',
-            LexType.MISMATCH: r'.+',
-            LexType.ENDFILE:  r'$',
-        }
+        # Tokenizer stuff
+        token_specification[LexType.NEWLINE]   = r'\n'
+        token_specification[LexType.SKIP]      = r'[ \t]+'
+        token_specification[LexType.ENDFILE]   = r'$'
+        token_specification[LexType.MISMATCH]  = r'.+'
+
 
         self.possible_transitions = possible_transitions
 
-        tok_regex = '|'.join('(?P<%s>%s)' % (str(name).split(".")[1], re)
-                             for name, re in token_specification.items())
+        tok_regex = '|'.join('(?P<%s>%s)' % (str(name).split(".")[1], reg)
+                             for name, reg in token_specification.items())
 
         self.rexp = re.compile(tok_regex)
 
@@ -77,6 +79,8 @@ class Lexer(object):
             value = self.lex_alias(kind, value)
             value = self.lex_value(kindname, value)
 
+
+
             # Tokenization
             if kind is LexType.NEWLINE or kind is LexType.ENDFILE:
                 column = match.start() - line_start
@@ -89,7 +93,7 @@ class Lexer(object):
 
             elif kind is LexType.MISMATCH:
                 raise TokenError(
-                    f'invalid syntax at line {line_num} : {value}')
+                    'invalid syntax at line {} : {}'.format(line_num, value))
 
             elif kind is LexType.LABEL:
                 column = match.start() - line_start
@@ -102,7 +106,7 @@ class Lexer(object):
 
             elif kind is LexType.INCLUDE:
                 value = value[9:]
-                filename = f"{directory}/{value}"
+                filename = "{directory}/{value}".format(**locals())
                 try:
                     with open(filename, "r") as f:
                         s = f.read()
@@ -114,8 +118,8 @@ class Lexer(object):
                         for token in self.lex(s, name=value, directory=directory):
                             yield token
                 except FileNotFoundError as e:
-                    print(f"/!\ Lexer Error in file \"{filename}\" line {line_num}:")
-                    print(f"/!\       {e}")
+                    print("/!\ Lexer Error in file \"{filename}\" line {line_num}:".format(**locals()))
+                    print("/!\       {e}".format(**locals()))
                     sys.exit(1)
 
             else:
@@ -136,7 +140,7 @@ class Lexer(object):
 
         # Technique inspiré de http.server.BasicHTTPHandler
 
-        method_name = f"lex_value_{kindname}"
+        method_name = "lex_value_{kindname}".format(**locals())
         if hasattr(self, method_name):
             method = getattr(self, method_name)
             return method(value)

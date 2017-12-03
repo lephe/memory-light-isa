@@ -2,8 +2,8 @@
 emu/build/***
 emu/emu
 
-*/__pycache__/*
-*/__pycache__
+***/__pycache__/*
+***/__pycache__
 
 # Compiled programs
 prog/*.bin

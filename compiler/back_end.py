@@ -107,7 +107,7 @@ class CleartextBitcodeBackEnd(BackEnd):
         realise_line = [self.huffman_tree[funcname]]
 
         for typ, raw_value in typed_args:
-            method_name = f"bin_{typ.name.lower()}"
+            method_name = "bin_{}".format(typ.name.lower())
             if hasattr(self, method_name):
                 method = getattr(self, method_name)
             else:

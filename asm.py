@@ -79,7 +79,7 @@ if __name__ == "__main__":
             elif args.back_end is LabelsBinaryBackEnd:
                 end = "bin"
 
-            wfilename = f"{start}.{end}"
+            wfilename = "{start}.{end}".format(**locals())
             out.to_file(wfilename)
 
         elif type(args.output) is str:

@@ -190,7 +190,7 @@ def compile_asm(s, *, back_end=MemonicBackEnd, generate_tree=False, directory=".
 
         with open("opcode.txt", "w+") as f:
             for opcode, memonic in hufftree.items():
-                f.write(f"{memonic} {opcode}\n")
+                f.write("{memonic} {opcode}\n".format(**locals()))
     else:
         par = parser.run()
         hufftree = default_opcode

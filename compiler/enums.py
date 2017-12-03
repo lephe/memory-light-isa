@@ -11,35 +11,43 @@ NB_REG = 8
 NB_BIT_REG = 3
 
 
-class LexType(enum.Enum):
+class AutoNumber(enum.Enum):
+    def __new__(cls):
+        value = len(cls.__members__) + 1
+        obj = object.__new__(cls)
+        obj._value_ = value
+        return obj
+
+
+class LexType(AutoNumber):
     """ Type enum for lexer's token """
-    MEMCOUNTER = enum.auto()
-    OPERATION = enum.auto()
-    DIRECTION = enum.auto()
-    CONDITION = enum.auto()
-    REGISTER = enum.auto()
-    COMMENT = enum.auto()
-    NEWLINE = enum.auto()
-    ENDFILE = enum.auto()
-    INCLUDE = enum.auto()
-    NUMBER = enum.auto()
-    LABEL = enum.auto()
-    SKIP = enum.auto()
-    BINARY = enum.auto()
-    CONS = enum.auto()
-    MISMATCH = enum.auto()
+    MEMCOUNTER = ()
+    OPERATION = ()
+    DIRECTION = ()
+    CONDITION = ()
+    REGISTER = ()
+    COMMENT = ()
+    NEWLINE = ()
+    ENDFILE = ()
+    INCLUDE = ()
+    NUMBER = ()
+    LABEL = ()
+    SKIP = ()
+    BINARY = ()
+    CONS = ()
+    MISMATCH = ()
 
 
-class ValueType(enum.Enum):
-    MEMCOUNTER = enum.auto()
-    DIRECTION = enum.auto()
-    CONDITION = enum.auto()
-    UCONSTANT = enum.auto()  # Unsigned Constant
-    SCONSTANT = enum.auto()  # Signed Constant
-    RADDRESS = enum.auto()  # Relative address
-    AADDRESS = enum.auto()  # Absolute address
-    SHIFTVAL = enum.auto()
-    REGISTER = enum.auto()
-    LABEL = enum.auto()
-    SIZE = enum.auto()
-    BINARY = enum.auto()
+class ValueType(AutoNumber):
+    MEMCOUNTER = ()
+    DIRECTION = ()
+    CONDITION = ()
+    UCONSTANT = ()  # Unsigned Constant
+    SCONSTANT = ()  # Signed Constant
+    RADDRESS = ()  # Relative address
+    AADDRESS = ()  # Absolute address
+    SHIFTVAL = ()
+    REGISTER = ()
+    LABEL = ()
+    SIZE = ()
+    BINARY = ()

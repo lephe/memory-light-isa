@@ -44,8 +44,8 @@ class Parser(object):
                 try:
                     self.handle_one()
                 except ParserError as e:
-                    print(f"/!\ Parser Error in file \"{token.filename}\" line {token.line}:")
-                    print(f"/!\       {e}")
+                    print("/!\ Parser Error in file \"{token.filename}\" line {token.line}:".format(**locals()))
+                    print("/!\       {e}".format(**locals()))
                     sys.exit(1)
 
                 while not self.out_stack.is_empty():
@@ -89,20 +89,20 @@ class Parser(object):
         args_values = tuple(map(lambda x: x.value, res[1:]))
 
         if fun_name not in self.functions.keys():
-            raise ParserError(f"Not found operation : {fun_name}")
+            raise ParserError("Not found operation : {}".format(fun_name))
 
         if args_types not in self.functions[fun_name].keys():
             raise ParserError(
-                f"Arguments types don't match function : {fun_name}")
+                "Arguments types don't match function : {}".format(fun_name))
 
         funcname, goal_args_type = self.functions[fun_name][args_types]
 
         typed_args = []
 
         for value, goal_type in zip(args_values, goal_args_type):
-            method_name = f"read_{goal_type.name.lower()}"
+            method_name = "read_{}".format(goal_type.name.lower())
             if not hasattr(self, method_name):
-                raise ParserError(f"Reader not found for {goal_type.name}")
+                raise ParserError("Reader not found for {goal_type.name}".format(**locals()))
 
             method = getattr(self, method_name)
 
@@ -110,8 +110,8 @@ class Parser(object):
                 typed_value = Value(goal_type, method(value))
             except AssertionError as e:
                 raise ParserError(
-                    f"couldn't read {goal_type.name} : The value is not in the \
-right range")
+                    "couldn't read {goal_type.name} : The value is not in the \
+right range".format(**locals()))
 
             typed_args.append(typed_value)
 

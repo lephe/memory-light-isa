@@ -104,7 +104,7 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
                         label = x.typed_args[1].raw_value
 
                     if label not in label_dict:
-                        raise BackEndError(f"Undefined label '{label}'")
+                        raise BackEndError("Undefined label '{label}'".format(**locals()))
 
                     i = label_dict[label]
 
@@ -124,7 +124,7 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
                     label = x.typed_args[0].raw_value
 
                     if label not in label_dict:
-                        raise BackEndError(f"Undefined label '{label}'")
+                        raise BackEndError("Undefined label '{label}'".format(**locals()))
 
                     i = label_dict[label]
 
@@ -155,14 +155,14 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
 
             # x.funcname is "jumpl" or "jumpifl" or "call"
             elif type(x) is Line:
-                bitcode = f" {self.huffman_tree[x.funcname[:-1]]}"
+                bitcode = " " + self.huffman_tree[x.funcname[:-1]]
 
                 endcode.append(bitcode)
                 if x.funcname is "jumpifl":
                     cond = x.typed_args[0].raw_value
-                    endcode.append(f" {self.bin_condition(cond)}")
+                    endcode.append(" " + self.bin_condition(cond))
                 k, n = addr_values[i]
-                endcode.append(f" {self.bit_prefix[k] + self.binary_repr(n, k,signed=True)}")
+                endcode.append(" " + self.bit_prefix[k] + self.binary_repr(n, k,signed=True))
 
         # print(endcode)
 
