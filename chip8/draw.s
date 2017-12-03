@@ -1,7 +1,7 @@
 ; clear_screen()
 clear_screen:
 	; Load VRAM pointer and counter
-	leti	r0 0x100000 ; VRAM base
+	leti	r0 0x10000 ; VRAM base
 	leti	r3 640
 	getctr	a0 r2
 	setctr	a0 r0

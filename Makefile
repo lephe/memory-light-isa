@@ -1,3 +1,5 @@
+#! /usr/bin/make -f
+
 all:
 	(cd prog; make all)
 	(cd emu; make emu)

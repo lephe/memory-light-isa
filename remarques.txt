@@ -1,13 +1,152 @@
-# Remarques sur le jeu d'instructions
+# Remarques sur l'architecture
 
-On a essayé de les faire aussi constructives que possible, du coup c'est un peu
-long (désolé pour ça). Voilà en gros de quoi il s'agit :
+Le fichier a été mis à jour pour le rendu 2. Les nouveaux points portent
+essentiellement sur la gestion de la mémoire :
+
+- L'unique mode d'adressage
+- Les compteurs disjoints des registres
+- Une note sur l'argument de call
+
+Les remarques du rendu 1 étaient les suivantes et concernaient le jeu
+d'instructions :
 
 - Les fonctions de calcul de base
 - L'absence de décalage de bits dynamique
 - Le choix de `addi` et `subi` non-signés
 - Le bit de direction de `shift`
 - Les sauts absolus signés (Sébastien)
+
+
+
+## L'unique mode d'adressage
+
+Le seul mode d'adressage dont on dispose est « compteur avec post-increment ».
+C'est restrictif pour pas mal de raisons :
+
+- On ne dispose que de deux pointeurs vers la mémoire, ce qui oblige toute
+  fonction qui manipule des pointeurs à sauvegarder et restaurer a0 et a1 à
+  longueur de pages.
+
+- Bien qu'utile pour clear_screen et pop (qui s'identifie du coup à un read),
+  le post-increment est assez souvent gênant. Tant qu'il s'agit de manipuler
+  des tableaux ou des chaînes de caractères c'est impeccable, mais dès qu'on
+  veut modifier une variable passée par adresse, il faut quelque chose comme :
+
+    getctr a0 r0	; Sauvegarder a0
+    setctr a0 r1	; r1 = adresse de la variable manipulée
+    readze a0 64 r2	; r2 = valeur manipulée
+    add2i r2 1 		; Modifier r2...
+    setctr a0 r1	; Recharger r1 car a0 a avancé sans nous
+    write a0 64 r2	; Réécrire la valeur modifiée
+    setctr a0 r0	; Restaurer a0
+
+  Ça, c'est si a0 est protégé par les conventions d'appel. Pour moi c'est le
+  cas : l'idée était que dans un parcours de tableau/liste/string/etc, on ne
+  veut pas que les fonctions appelées gênent le parcours. Si a0 ne l'est pas,
+  alors l'appelant l'a probablement sauvegardé pour son usage personnel, donc
+  on tourne en rond.
+
+- En particulier pour la pile, on aimerait avoir un pre-decrement. Cela
+  permettrait, ultimement, d'utiliser n'importe lequel de sp, a0 et a1 pour
+  faire une pile, et quand la pile n'est pas requise, de disposer de trois
+  pointeurs au lieu de deux.
+
+- L'autre problème sérieux est qu'on ne peut pas ajouter d'offset à un accès
+  mémoire. Toute fonction qui stocke ses variables locales sur la pile a besoin
+  d'un mode d'adressage du type *(sp + offset) pour ne pas avoir à dépiler la
+  moitiés de ses données chaque fois qu'une variable est utilisée.
+
+  Du coup, on se retrouve à jongler fébrilement entre les registres et la pile.
+  Mais dès qu'on veut libérer de la place dans plus de 4 registres, on se
+  trouve obligé de sauvegarder leur valeur (conventions d'appel obligent)... et
+  si on les met sur la pile, on perd l'accès aux données empilées que l'on
+  voulait manipuler en premier lieu.
+
+  La fonction draw de prog/lib_draw.s a nécessité plus d'ingénierie sur la
+  manipulation des données que sur l'implémentation du tracé proprement dit,
+  pour être honnête. Je n'ai pas pu m'en sortir de façon élégante sans profiter
+  du fait que les deux arguments empilés pouvaient être dépilés d'un seul coup
+  parce qu'ils tenaient simultanément dans un registre.
+
+
+
+## Les compteurs disjoints des registres
+
+Le fait que les compteurs ne soient pas des registres oblige à les récupérer
+chaque fois qu'on veut faire des calculs pour les renvoyer à la mémoire
+ensuite. Par ailleurs, PC n'est utilisé que dans deux cas : pour connaître
+l'adresse de données introduites par un .const (voir font_lea à la fin de
+prog/lib_font.s) et pour effectuer un saut absolu avec setctr. Le deuxième
+usage disparaîtrait facilement si on utilisait des registres pour adresser.
+
+Quitte à ajouter un bit de plus par instruction mémoire, on pourrait adresser
+avec n'importe quel registre à la place des compteurs. On passerait de deux
+pointeurs à huit pointeurs, en toutes circonstances.
+
+Et ce ne serait pas forcément coûteux en termes de code : à titre d'exemple,
+prog/drawing.bin effectue 2462 manipulations de compteur (invocations de getctr
+et setctr) pour 28826 instructions, soit 8.54% du total. Tout ça parce que les
+compteurs sont protégés par les conventions d'appel, parce qu'ils ne sont que
+deux.
+
+(À la réflexion, j'imagine que protéger un seul compteur par les conventions
+d'appel serait plus efficace, mais ça ne change pas le problème dans le cas où
+les fonctions manipulent au moins deux pointeurs. Elles devront toujours
+sauvegarder celui qui n'est pas protégé pour leur usage futur.)
+
+Reste le cas de SP. Il me semble pertinent de le stocker dans r7 quitte à
+toujours placer les adresses de retour sur la pile. (Je crois que c'est ce qui
+se passe sur x86, d'ailleurs.) Si l'on combinait tout ça avec des modes
+d'adressage un chouille plus riches, par exemple « registre », « registre avec
+post-increment », « registre avec pre-decrement » et « registre avec offset »,
+on gagnerait beaucoup en puissance sur la gestion de la mémoire pour pas cher.
+
+Bien sûr, utiliser des registres comme compteurs signifierait que la mémoire
+doit en avoir aussi une copie, et là c'est juste impossible. Mais ce problème
+se pose déjà dans une moindre mesure avec les compteurs.
+
+Le meilleur compromis qui me vienne à l'esprit, entre passer 64 bits sur le bus
+d'adresse à chaque accès, et dupliquer la logique des compteurs au niveau de la
+mémoire, serait de fournir un système de segmentation dynamique. L'utilisateur
+définirait dynamiquement l'adresse 0 d'un segment (parmi, par exemple, quatre
+qu'il manipulerait à loisir) et fournirait ensuite des adresses relatives à ce
+segment. On utiliserait alors les registres comme pointeurs, mais en manipulant
+des valeurs beaucoup plus courtes sur le bus d'adresses.
+
+
+
+## Une note sur l'argument de call
+
+Sans parler de son signe (sur lequel il y a encore un pavé plus bas), le fait
+qu'il soit absolu ne correspond pas aux méthodes « habituelles » (il me
+semble), à savoir un call absolu dont l'adresse est donnée par un registre, et
+un call relatif dont l'offset est donné en paramètre de l'instruction.
+
+Sur nos petits programmes on n'a pas le moindre problème, mais sur un vrai
+système où la mémoire virtuelle fait 2^64 bits de taille et où les libs
+dynamiques sont possiblement chargées aux antipodes du programme exécuté,
+utiliser des calls absolus partout risque de coûter cher à la longue.
+
+L'intérêt de séparer en un call absolu (registre) et un relatif (immédiat) est
+triple. D'abord, les procédures proches peuvent s'appeller à moindres frais
+même si leur adresse est très grande dans l'espace virtuel.
+
+Ensuite, on peut écrire des fonctions d'ordre supérieur. C'est déjà possible
+pour l'instant parce qu'on a setctr pc et getctr pc, mais il faut mettre les
+mains dans le système pour calculer r7 correctement lorsqu'on veut faire un
+appel de procédure à une adresse donnée par un registre :
+
+    getctr pc r7
+    add2i  r7 28 ; Taille du add2i + setctr
+    setctr pc r0 ; Sauter à l'adresse de r0
+
+Inutile de dire que ça va arrêter de fonctionner dès que je vais rééquilibrer
+l'arbre de Huffman avec d'autres statistiques.
+
+Enfin, on pourrait écrire du code indépendant de la position. Pour l'instant,
+il est impossible d'écrire des libs dynamiques dans cet assembleur sans
+recourir à des tricks barbares pour calculer la longueur des sauts sans
+recourir au moindre call. C'est un peu gênant.
 
 
 

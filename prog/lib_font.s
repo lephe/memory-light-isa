@@ -28,7 +28,7 @@ putc:
 	add2	r0 r3
 
 	; Get a pointer to the appropriate video RAM location
-	leti	r3 0x100000
+	leti	r3 0x10000
 
 	; Add 160 * y (* 16)
 	shift	left r2 9

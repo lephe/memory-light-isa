@@ -24,13 +24,13 @@ command-line argument to specify the size of each segment:
 
 All four arguments are sizes in *bits*. All of them must be multiples of 64,
 and a compatibility warning is issued the video RAM starts at any other address
-than 0x100000. Sizes may be expressed in bits (eg. 256), in kibibits (eg. 8k),
+than 0x10000. Sizes may be expressed in bits (eg. 256), in kibibits (eg. 8k),
 or in mibibits (eg. 2M). The default configuration is equivalent to:
 
-    --geometry 256k:256:512k:50000
+    --geometry 32k:16k:16k:327680
 
 The standard video memory is a buffer of 160 * 128 pixels with 16-bit depth,
-thus its size is fixed to 50000 bits.
+thus its size is fixed to 327680 bits.
 
 The four counters are initialized at startup with the following values:
 

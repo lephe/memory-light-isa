@@ -36,3 +36,4 @@ properties:
     Address:  0x101e30
     Depth:    16-bit per pixel, black = 0x0000, white = 0xffff
     Stride:   0xa00 bits per line
+

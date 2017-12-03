@@ -22,9 +22,9 @@
 #include <stdint.h>
 
 /* Default memory geometry, four segments of 1M each */
-#define	MEMORY_DEFAULT_TEXT	(256 << 10)
-#define	MEMORY_DEFAULT_STACK	(256 << 10)
-#define	MEMORY_DEFAULT_DATA	(512 << 10)
+#define	MEMORY_DEFAULT_TEXT	(32 << 10)
+#define	MEMORY_DEFAULT_STACK	(16 << 10)
+#define	MEMORY_DEFAULT_DATA	(16 << 10)
 #define	MEMORY_DEFAULT_VRAM	(327680)
 
 /*
