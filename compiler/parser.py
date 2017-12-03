@@ -100,7 +100,7 @@ class Parser(object):
         typed_args = []
 
         for value, goal_type in zip(args_values, goal_args_type):
-            method_name = "read_{}".format(goal_type.name.lower())
+            method_name = "read_" + goal_type.name.lower()
             if not hasattr(self, method_name):
                 raise ParserError("Reader not found for {goal_type.name}".format(**locals()))
 

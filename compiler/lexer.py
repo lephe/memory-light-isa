@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 import re
 import sys
@@ -27,14 +28,14 @@ class Lexer(object):
         token_specification[LexType.COMMENT]     = r';(?:.|[ \t])*'
         token_specification[LexType.REGISTER]    = r'\b(?:r|R)[0-9]+\b'
         token_specification[LexType.DIRECTION]   = r'\b(?:left|right)\b'
-        token_specification[LexType.NUMBER]      = r'[+-]?\b(?:0x[0-9A-Fa-f]+|[0-9]+)\b'
+        token_specification[LexType.NUMBER]      = r'[+-]?(?:0x[0-9A-Fa-f]+|[0-9]+)\b'
         token_specification[LexType.CONDITION]   = r'\b(?:eq|z|neq|nz|sgt|slt|gt|ge|nc|lt|c|v|le)\b'
         token_specification[LexType.MEMCOUNTER]  = r'\b(?:pc|sp|a0|a1)\b'
 
         # LABELS/IMPORTS
         token_specification[LexType.LABEL]       = r'\b[a-zA-Z_][a-z_A-Z0-9]*:?'
-        token_specification[LexType.INCLUDE]     = r'\.include [a-zA-z_][a-z_A-Z0-9\.]*\b'
-        token_specification[LexType.CONS]        = r'.const'
+        token_specification[LexType.INCLUDE]     = r'\.include\s+[a-zA-z_][a-z_A-Z0-9\.]*\b'
+        token_specification[LexType.CONS]        = r'\.const'
         token_specification[LexType.BINARY]      = r'#[01]+'
 
         # Tokenizer stuff
@@ -46,8 +47,8 @@ class Lexer(object):
 
         self.possible_transitions = possible_transitions
 
-        tok_regex = '|'.join('(?P<%s>%s)' % (str(name).split(".")[1], reg)
-                             for name, reg in token_specification.items())
+        tok_regex = '|'.join('(?P<%s>%s)' % (str(name).split(".")[1], re)
+                             for name, re in token_specification.items())
 
         self.rexp = re.compile(tok_regex)
 
@@ -78,8 +79,6 @@ class Lexer(object):
 
             value = self.lex_alias(kind, value)
             value = self.lex_value(kindname, value)
-
-
 
             # Tokenization
             if kind is LexType.NEWLINE or kind is LexType.ENDFILE:
