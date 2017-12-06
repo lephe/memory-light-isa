@@ -33,6 +33,7 @@ _00e0:
 	; Clear screen
 	cmpi	r4 0x00e0
 	jumpif	neq _00ee
+	leti	r1 0
 	call	clear_screen
 	jump	_von_neumann
 
@@ -541,6 +542,7 @@ _fx55:
 	; Save registers to memory at I
 	cmpi	r5 0x55
 	jumpif	neq _fx65
+	let	r1 r4
 	call	mem_dump
 	jump	_von_neumann
 
@@ -548,6 +550,7 @@ _fx65:
 	; Load registers from memory at I
 	cmpi	r5 0x65
 	jumpif	neq _von_neumann
+	let	r1 r4
 	call	mem_load
 	jump	_von_neumann
 

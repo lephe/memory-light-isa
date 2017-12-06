@@ -108,6 +108,17 @@ void debugger_code_init(void);
 void debugger_code(void);
 
 /*
+	debugger_code_mode() -- set the disassembler mode
+	If follow_pc is non-zero, the disassembler follows PC during execution.
+	Otherwise, it stays at address. You probably want to call
+	debugger_code() after this function.
+
+	@arg	follow_pc	First mode: always show current instruction
+	@arg	address		Second mode: show fixed address
+*/
+void debugger_code_mode(int follow_pc, uint64_t address);
+
+/*
 	debugger_memory_move() -- display another section of the memory
 
 	@arg	address	Top address of the new section to display

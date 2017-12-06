@@ -40,7 +40,7 @@ static const char *help_string =
 "  s <n>       Step <n> instructions (default 1)\n"
 "  b           Manage breakpoints (try 'help b')\n"
 "  r           Run until breakpoint, halt or end of program\n"
-//"  d           Disassemble program (try 'help d')\n"
+"  d           Disassemble program (try 'help d')\n"
 "  m <addr>    Display memory at address <addr> (hexadecimal, without '0x')\n"
 "    :ptr      Display memory at given pointer (:pc, :sp, :a0, :a1)\n"
 "  c           Show counts of executed instructions so far\n"
@@ -50,11 +50,10 @@ static const char *help_string_b =
 "  b           Show all configured breakpoints\n"
 "  b <addr>    Add a breakpoint at the given address\n"
 "  b - <addr>  Remove a breakpoint at the given address\n";
-/* static const char *help_string_d =
+static const char *help_string_d =
 "Disassemble program:\n"
 "  d           Disassemble at PC and follow PC during execution\n"
 "  d <addr>    Disassemble the given location and stay there when PC moves\n";
-*/
 
 /* TODO - Show stack, change program state, more? */
 
@@ -99,7 +98,7 @@ static void cmd_help(int argc, __attribute__((unused)) char **argv)
 	for(int i = 1; i < argc; i++)
 	{
 		if(!strcmp(argv[i], "b")) cmd_help_color(help_string_b);
-//		if(!strcmp(argv[i], "d")) cmd_help_color(help_string_d);
+		if(!strcmp(argv[i], "d")) cmd_help_color(help_string_d);
 	}
 }
 
@@ -151,6 +150,33 @@ static void cmd_run(void)
 	cmd_run_cpu(-1);
 }
 
+static void cmd_disasm(int argc, char **argv)
+{
+	if(argc == 1)
+	{
+		debugger_code_mode(1, 0);
+		debugger_code();
+		return;
+	}
+
+	if(argc > 3)
+	{
+		dbgerr("d: too much arguments (see 'help d')\n");
+		return;
+	}
+
+	uint64_t address;
+	int x = sscanf(argv[1], "%lx", &address);
+	if(x < 1)
+	{
+		dbgerr("d: invalid program address\n");
+		return;
+	}
+
+	debugger_code_mode(0, address);
+	debugger_code();
+}
+
 static void cmd_break(int argc, char **argv)
 {
 	if(argc == 1)
@@ -178,6 +204,8 @@ static void cmd_break(int argc, char **argv)
 	}
 
 	(argc == 2) ? break_add(address) : break_remove(address);
+	/* Adding breakpoints usually change the color of addresses */
+	debugger_code();
 }
 
 static void cmd_mem(int argc, char **argv)
@@ -408,6 +436,7 @@ void debugger(const char *filename, cpu_t *cpu)
 		else if(!strcmp(argv[0], "q")) break;
 		else if(!strcmp(argv[0], "s")) cmd_step(argc, argv);
 		else if(!strcmp(argv[0], "r")) cmd_run();
+		else if(!strcmp(argv[0], "d")) cmd_disasm(argc, argv);
 		else if(!strcmp(argv[0], "b")) cmd_break(argc, argv);
 		else if(!strcmp(argv[0], "m")) cmd_mem(argc, argv);
 		else if(!strcmp(argv[0], "c")) cmd_counts();

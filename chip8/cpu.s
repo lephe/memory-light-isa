@@ -34,7 +34,7 @@ cpu_setI:
 	setctr	a0 r0
 	write	a0 16 r1
 	setctr	a0 r2
-	return0
+	return
 
 ; cpu_opcode() -> r0 = next opcode and PC += 2
 cpu_opcode:

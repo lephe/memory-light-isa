@@ -12,6 +12,7 @@
 #include <ncurses.h>
 #include <disasm.h>
 #include <debugger.h>
+#include <breaks.h>
 
 /* Some hints about the geometry of the disassembled output. A disassembled
    line looks like this:
@@ -32,6 +33,12 @@ static int geom_base = -1;	/* Position of mnemonic and arguments */
 static int geom_comp = -1;	/* Position of complementary information */
 static int geom_cmpl = -1;	/* Do we have enough space for complementary
 				   information after a literal 64-bit value? */
+
+/* Disassembling mode:
+   - If mode_pc = 1, the disassembler follows pc
+   - Otherwise, the disassembler shows fixed address mode_addr */
+static int mode_pc = 1;
+static uint64_t mode_addr = 0;
 
 /*
 	debugger_arg()
@@ -170,10 +177,14 @@ static void debugger_disasm(uint64_t ptr)
 		/* Display instruction addresses if there's enough space */
 		if(geom_info >= 0)
 		{
+			int style = break_has(copy)
+				? COLOR_PAIR(color_red)
+				: A_DIM | COLOR_PAIR(color_white);
+
 			wmove(wcode, row, geom_info);
-			wattron(wcode, A_DIM | COLOR_PAIR(color_white));
+			wattron(wcode, style);
 			wprintw(wcode, "%0*x:  ", geom_addr, copy);
-			wattroff(wcode, A_DIM | COLOR_PAIR(color_white));
+			wattroff(wcode, style);
 		}
 
 		/* Show the mnemonic with proper syntax highlighting */
@@ -204,6 +215,13 @@ static void debugger_disasm(uint64_t ptr)
 	}
 }
 
+/* debugger_code_mode() -- set the disassembler mode */
+void debugger_code_mode(int follow_pc, uint64_t address)
+{
+	mode_pc = follow_pc;
+	mode_addr = address;
+}
+
 /* debugger_code() -- refresh the code panel, showing disassembled code */
 void debugger_code(void)
 {
@@ -217,8 +235,7 @@ void debugger_code(void)
 	wattroff(wcode, A_BOLD);
 
 	/* More importantly, the disassembled code */
-	/* TODO - Allow disassembling from any address */
-	debugger_disasm(debugger_cpu->ptr[PC]);
+	debugger_disasm(mode_pc ? debugger_cpu->ptr[PC] : mode_addr);
 	wrefresh(wcode);
 }
 

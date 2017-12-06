@@ -13,13 +13,14 @@ la mémoire.
 
 ## Tour rapide du rendu
 
-Le programme de test inclut les deux bilbiothèques par une directive .include.
+Le programme de test inclut les deux bibliothèques par une directive .include.
 On peut donc le compiler directement (au format binaire de l'émulateur) :
 
     ./asm.py -b prog/drawing.s
 
-En cas de problème, le fichier prog/drawing.bin est fourni avec l'archive. Pour
-lancer le programme assemblé dans l'émulateur en console :
+L'assembleur a été porté pour Python 3.5, mais en cas de doute, le fichier
+prog/drawing.bin est fourni avec l'archive. Pour lancer le programme assemblé
+dans l'émulateur en console :
 
     emu/emu -r -g prog/drawing.bin
 
@@ -35,6 +36,9 @@ Le code fourni dans les deux fichiers lib_draw.s et lib_font.s respecte les
 conventions d'appel décrites dans doc/prog_calling_conventions.md. Le fichier
 prog/wrapper.s fournit des wrappers qui utilisent celles du sujet, qui sont
 légèrement différentes.
+
+Les labels sont normalement générés automatiquement de façon optimale, et les
+fonctions clear_screen et fill ont été optimisées de façon simple.
 
 ## Assembleur (/compiler)
 

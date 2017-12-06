@@ -78,7 +78,7 @@ memory_t *memory_new(uint64_t text, uint64_t stack, uint64_t data,
 	uint64_t vram);
 
 /*
-	memory_load() -- load a program into memory
+	memory_load_program() -- load a program into memory
 	Loads the file named 'filename' into the given memory. The file may not
 	fit into the code/stack segment, in which case this function fails and
 	calls exit(1). This function may also fail is an error is encountered
@@ -88,7 +88,18 @@ memory_t *memory_new(uint64_t text, uint64_t stack, uint64_t data,
 	@arg	mem		Memory to load the file into
 	@arg	filename	File to load
 */
-void memory_load(memory_t *mem, const char *filename);
+void memory_load_program(memory_t *mem, const char *filename);
+
+/*
+	memory_load_file() -- load an additional file into memory
+	Loads the provided file at the given address in memory. The file must
+	fit in memory. Returns non-zero on error.
+
+	@arg	mem		Memory to load the file into
+	@arg	address		Where to load the file into memory
+	@arg	filename	File to load
+*/
+int memory_load_file(memory_t *mem, uint64_t address, const char *filename);
 
 /*
 	memory_destroy() -- free a memory_t object allocated by memory_new()

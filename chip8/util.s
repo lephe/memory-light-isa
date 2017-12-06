@@ -20,6 +20,7 @@ bcd:
 	push	64 r4
 	push	64 r5
 	push	64 r6
+	push	64 r7
 
 	leti	r4 0
 	leti	r5 3
@@ -31,6 +32,7 @@ _bcd_one:
 	leti	r2 0x199a
 	call	mult
 	shift	right r0 16
+	let	r2 r0
 
 	; r1 = r6 % 10
 	shift	left r0 1
@@ -43,12 +45,13 @@ _bcd_one:
 	shift	left r4 8
 	or2	r4 r1
 
-	let	r6 r0
+	let	r6 r2
 	sub2i	r5 1
 	jumpif	nz _bcd_one
 
 	let	r0 r4
-	pop	64 r4
-	pop	64 r5
+	pop	64 r7
 	pop	64 r6
+	pop	64 r5
+	pop	64 r4
 	return

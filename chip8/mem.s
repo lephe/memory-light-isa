@@ -12,12 +12,15 @@ mem_opcode:
 	setctr	a0 r1
 	return
 
-; mem_dump() -> stores v0..vf at the location given by I
+; mem_dump(r1 = x) -> stores v0..vx at the location given by I
 mem_dump:
 	push	64 r7
+	push	64 r4
+
+	add3i	r4 r1 1
 
 	call	cpu_getI
-	add3i	r1 r0 16
+	add3i	r1 r0 r4
 	shift	left r0 3
 	add2i	r0 0x80000 ; Memory base
 
@@ -28,23 +31,29 @@ mem_dump:
 	getctr	a1 r0
 	setctr	a1 r3
 
-	readze	a1 64 r3
-	write	a0 64 r3
-	readze	a1 64 r3
-	write	a0 64 r3
+_mem_dump_one:
+	readze	a1 8 r3
+	write	a0 8 r3
+	sub2i	r4 1
+	jumpif	nz _mem_dump_one
 
 	setctr	a0 r2
 	setctr	a1 r0
 
 	call	cpu_setI
+	pop	64 r4
 	pop	64 r7
+	return
 
-; mem_load() -> load v0..vf from the location given by I
+; mem_load(r1 = x) -> load v0..vx from the location given by I
 mem_load:
 	push	64 r7
+	push	64 r4
+
+	add3i	r4 r1 1
 
 	call	cpu_getI
-	add3i	r1 r0 16
+	add3i	r1 r0 r4
 	shift	left r0 3
 	add2i	r0 0x80000 ; Memory base
 
@@ -55,14 +64,17 @@ mem_load:
 	getctr	a1 r0
 	setctr	a1 r3
 
-	readze	a0 64 r3
-	write	a1 64 r3
-	readze	a0 64 r3
-	write	a1 64 r3
+_mem_load_one:
+	readze	a0 8 r3
+	write	a1 8 r3
+	sub2i	r4 1
+	jumpif	nz _mem_load_one
 
 	setctr	a0 r2
 	setctr	a1 r0
 
 	call	cpu_setI
+	pop	64 r4
 	pop	64 r7
+	return
 

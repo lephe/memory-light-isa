@@ -33,6 +33,10 @@ typedef struct
 	};
 
 	const char *filename;		/* Emulated binary file */
+
+	/* Load additional file if requested */
+	uint64_t load_addr;
+	const char *load_file;
 } opt_t;
 
 /*
@@ -81,6 +85,22 @@ static int read_geometry(const char *arg, opt_t *opt)
 }
 
 /*
+	read_load() -- read the data file info from a string
+	Returns non-zero on error.
+*/
+static int read_load(const char *arg, opt_t *opt)
+{
+	char str[64];
+	int offset;
+	int x = sscanf(arg, "%64[0-9kM]:%n", str, &offset);
+	if(x != 1) return 1;
+
+	opt->load_addr	= sizetoi(str);
+	opt->load_file	= arg + offset;
+	return 0;
+}
+
+/*
 	parse_args() -- parse command-line options into an opt_t object
 
 	@arg	argc	Number of command-line arguments
@@ -94,6 +114,8 @@ static void parse_args(int argc, char **argv, opt_t *opt)
 	opt->help = 0;
 	opt->text = opt->stack = opt->data = opt->vram = 0;
 	opt->filename = NULL;
+	opt->load_addr = 0;
+	opt->load_file = NULL;
 
 	error_clear();
 
@@ -116,6 +138,15 @@ static void parse_args(int argc, char **argv, opt_t *opt)
 			if(!arg) error("expected value after --stack-addr");
 			else if(read_geometry(arg, opt))
 				error("invalid geometry: '%s'", arg);
+		}
+
+		/* Additional data file */
+		else if(!strcmp(arg, "--load"))
+		{
+			arg = argv[++i];
+			if(!arg) error("expected argument after --load");
+			else if(read_load(arg, opt))
+				error("invalid load argument: '%s'", arg);
 		}
 
 		/* Help message */
@@ -206,7 +237,14 @@ int main(int argc, char **argv)
 
 	/* Allocate a virtual memory and load the program into it */
 	mem = memory_new(opt.text, opt.stack, opt.data, opt.vram);
-	memory_load(mem, opt.filename);
+	memory_load_program(mem, opt.filename);
+
+	/* Load an additional file if requested */
+	if(opt.load_file)
+	{
+		int x = memory_load_file(mem, opt.load_addr, opt.load_file);
+		if(x) return 1;
+	}
 
 	/* Create a CPU and give it the memory */
 	cpu = cpu_new(mem);

@@ -1,7 +1,7 @@
 ; clear_screen()
 clear_screen:
 	; Load VRAM pointer and counter
-	leti	r0 0x10000 ; VRAM base
+	leti	r0 0x100000 ; VRAM base
 	leti	r3 640
 	getctr	a0 r2
 	setctr	a0 r0
@@ -31,7 +31,10 @@ _clear_screen_loop:
 
 ; load_hexa() -> load character table at 0x80000
 load_hexa:
+	push	64 r7
 	call	_load_hexa_lea
+	pop	64 r7
+
 	leti	r1 0x80000 ; Start of memory
 	getctr	a0 r2
 	getctr	a1 r3

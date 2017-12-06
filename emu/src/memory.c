@@ -48,11 +48,12 @@ memory_t *memory_new(uint64_t text, uint64_t stack, uint64_t data,
 	return mem;
 }
 
-/* memory_load() -- load a program into memory */
-void memory_load(memory_t *mem, const char *filename)
+/* memory_load_program() -- load a program into memory */
+void memory_load_program(memory_t *mem, const char *filename)
 {
 	/* Sanity checks */
-	if(!mem || !filename) ifatal("memory_load(): NULL memory or filename");
+	if(!mem || !filename)
+		ifatal("memory_load_program(): NULL memory or filename");
 
 	/* Open the file for reading */
 	error_clear();
@@ -65,6 +66,10 @@ void memory_load(memory_t *mem, const char *filename)
 	fseek(fp, 0, SEEK_SET);
 
 	/* Remember that there is an 8-byte header at the beginning */
+	if(size <= 8)
+	{
+		error("binary file is either empty or corrupted");
+	}
 	uint64_t header_text;
 	size -= 8;
 
@@ -82,14 +87,74 @@ void memory_load(memory_t *mem, const char *filename)
 	{
 		size_t b1 = fread(&header_text, 8, 1, fp);
 		if(b1 < 1) error("# cannot read from '%s'",filename);
-		size_t b2 = fread(mem->mem, size, 1, fp);
-		if(b2 < 1) error("# cannot read from '%s'",filename);
+
+		/* Does the file announces more data that what it actually
+		   contains? */
+		if(8 * size < be64toh(header_text))
+		{
+			error("binary file is corrupted or data is missing");
+		}
+		else
+		{
+			size_t b2 = fread(mem->mem, size, 1, fp);
+			if(b2 < 1) error("# cannot read from '%s'",filename);
+		}
 	}
 	fclose(fp);
 	error_check();
 
 	/* Set the length of the text section in the memory object */
 	mem->text = be64toh(header_text);
+}
+
+/* memory_load_file() -- load an additional file into memory */
+int memory_load_file(memory_t *mem, uint64_t address, const char *filename)
+{
+	if(!mem || !filename)
+		ifatal("memory_load_file(): NULL memory or filename");
+
+	/* Check that we're not *already* out of bounds */
+	if(address >= mem->memsize)
+	{
+		error("load address of '%s' is out of memory (%#x >= %#x)",
+			filename, address, mem->memsize);
+		return 1;
+	}
+
+	/* Check that we're loading on a byte boundary */
+	if(address & 7)
+	{
+		error("can only load files on byte boundaries");
+		return 1;
+	}
+
+	/* Open and read the file */
+
+	FILE *fp = fopen(filename, "r");
+	if(!fp)
+	{
+		error("# cannot open '%s'", filename);
+		return 1;
+	}
+
+	fseek(fp, 0, SEEK_END);
+	unsigned long size = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	/* Check some more bounds */
+	if(address + size > mem->memsize)
+	{
+		error("load area of '%s' overflows from memory (%#x + %d > "
+			"%#x)", filename, address, size, mem->memsize);
+		fclose(fp);
+		return 1;
+	}
+
+	int x = fread((void *)mem->mem + (address >> 3), size, 1, fp);
+	fclose(fp);
+
+	if(!x) error("# cannot read from '%s'", filename);
+	return !x;
 }
 
 /* memory_destroy() -- free a memory_t object allocated by memory_new() */
