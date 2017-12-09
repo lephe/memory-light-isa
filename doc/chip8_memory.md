@@ -22,6 +22,8 @@ data segment.
     --------------------------------------------
     0x81e0     8        Delay timer      0x881e0
     0x81f0     8        Audio timer      0x881f0
+    --------------------------------------------
+    0x8200     8        HP48 flags       0x88200
 
 The emulated file has to be loaded at address DATA + 0x1000 (which is usually
 0x81000) before starting emulation.

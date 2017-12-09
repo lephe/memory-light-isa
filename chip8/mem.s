@@ -78,3 +78,44 @@ _mem_load_one:
 	pop	64 r7
 	return
 
+; mem_flags_dump(r1 = x) -> store v0..vx to flags register (HP48)
+mem_flags_dump:
+	leti	r0 0x88000 ; Register base
+	getctr	a0 r2
+	setctr	a0 r0
+	leti	r0 0x88200 ; HP48 flags
+	getctr	a1 r3
+	setctr	a1 r0
+
+	add2i	r1 1
+
+_mem_flags_dump_one:
+	readze	a0 8 r0
+	write	a1 8 r0
+	sub2i	r1 1
+	jumpif	nz _mem_flags_dump_one
+
+	setctr	a0 r2
+	setctr	a0 r3
+	return
+
+; mem_flags_load(r1 = x) -> load v0..vx from flags register (HP48)
+mem_flags_load:
+	leti	r0 0x88000 ; Register base
+	getctr	a0 r2
+	setctr	a0 r0
+	leti	r0 0x88200 ; HP48 flags
+	getctr	a1 r3
+	setctr	a1 r0
+
+	add2i	r1 1
+
+_mem_flags_load_one:
+	readze	a1 8 r0
+	write	a0 8 r0
+	sub2i	r1 1
+	jumpif	nz _mem_flags_load_one
+
+	setctr	a0 r2
+	setctr	a0 r3
+	return

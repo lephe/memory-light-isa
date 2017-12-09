@@ -81,6 +81,7 @@ draw:
 	push	64 r0
 	push	64 r4
 	push	64 r5
+	push	64 r7
 
 	; Get destination pointer
 	leti	r0 0x101e30 ; VRAM base
@@ -93,7 +94,6 @@ draw:
 	setctr	a1 r0
 
 	; Number of pixels to write
-	shift	left r3 3
 	let	r4 r3
 
 	; Get source pointer
@@ -101,6 +101,9 @@ draw:
 	shift	left r0 3
 	add2i	r0 0x80000 ; Memory base
 	setctr	a0 r0
+
+	leti	r1 8
+	let	r5 0
 
 	; Perform the drawing
 _draw_loop:
@@ -117,17 +120,33 @@ _draw_loop:
 	; Change the color of the pixel
 	leti	r0 0xffff
 	write	a1 16 r0
+	jump	_draw_next
 
 _draw_clear:
+	getctr	a1 r2
+	add2i	r2 16
+	setctr	a1 r2
 
+_draw_next:
+	sub2i	r1 1
+	jumpif	nz _draw_loop
+
+_draw_newline:
+	getctr	a1 r2
+	add2i	r2 2432
+	setctr	a1 r2
+
+	leti	r1 8
 	sub2i	r4 1
 	jumpif	nz _draw_loop
 
+_draw_end:
 	; Collision results
 	leti	r1 15
 	and3i	r2 r5 1
 	call	cpu_setReg
 
+	pop	64 r7
 	pop	64 r5
 	pop	64 r4
 	pop	64 r0

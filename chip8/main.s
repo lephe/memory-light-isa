@@ -24,6 +24,14 @@ _von_neumann:
 	; a lot of poorly-written instruction decoding
 	let	r4 r0
 
+	; Debugging
+debug:
+	cmpi	r4 0x1450
+	jumpif	neq debug_end
+debug_marker:
+	or2i	r0 0
+debug_end:
+
 _0000:
 	; Halt program (?)
 	cmpi	r4 0x0000
@@ -240,6 +248,7 @@ _8xy4:
 	leti	r1 15
 	let	r2 r5
 	call	cpu_setReg
+	jump	_von_neumann
 
 _8xy5:
 	; vx -= vy
@@ -255,11 +264,13 @@ _8xy5:
 	let	r2 r5
 	call	cpu_setReg
 
-	; Calculate borrow
+	; Calculate carry
 	shift	right r5 8
 	and3i	r2 r5 1
+	xor3i	r2 r2 1
 	leti	r1 15
 	call	cpu_setReg
+	jump	_von_neumann
 
 _8xy6:
 	; vx = vy = vy >> 1
@@ -301,8 +312,10 @@ _8xy7:
 	; Calculate borrow
 	shift	right r5 8
 	and3i	r2 r5 1
+	xor3i	r2 r2 1
 	leti	r1 15
 	call	cpu_setReg
+	jump	_von_neumann
 
 _8xye:
 	; vx = vy = vy << 1
@@ -315,7 +328,7 @@ _8xye:
 
 	; Calculate carry
 	let	r2 r6
-	shift	right r2 8
+	shift	right r2 7
 	and2i	r2 1
 	leti	r1 15
 	call	cpu_setReg
@@ -388,15 +401,23 @@ _dxyn:
 	; Draw sprite at vx, vy with height n
 	cmpi	r4 0xe000
 	jumpif	ge _ennn
-	and3i	r3 r4 0xf
+	and3i	r6 r4 0xf
 	shift	right r4 4
-	and3i	r2 r4 0xf
+	and3i	r5 r4 0xf
 	shift	right r4 4
-	and2i	r1 r4 0xf
+	and2i	r4 0xf
+	let	r1 r4
+	call	cpu_getReg
+	let	r4 r0
+	let	r1 r5
+	call	cpu_getReg
+	let	r2 r0
+	let	r1 r4
+	let	r3 r6
 	call	draw
 	jump	_von_neumann
 
-; Frow now on, we'll need to low nibble to distinguish between instructions
+; Frow now on, we'll need the low nibble to distinguish between instructions
 
 _ennn:
 	and3i	r5 r4 0xff
@@ -498,15 +519,22 @@ _fx1e:
 	call	cpu_getReg
 	let	r4 r0
 	call	cpu_getI
-	add3	r1 r0 r4
+	add2	r4 r0
+	and3i	r1 r4 0xfff
 	call	cpu_setI
+
+	; Calculate carry
+	shift	right r4 12
+	leti	r1 15
+	and2i	r2 r4 1
+	call	cpu_setReg
 	jump	_von_neumann
 
 _fx29:
-	; I = hexa sprite address (vf)
+	; I = hexa sprite address (vx)
 	cmpi	r5 0x29
 	jumpif	neq _fx33
-	leti	r1 15
+	let	r1 r4
 	call	cpu_getReg
 	shift	left r0 3
 	let	r1 r0
@@ -549,9 +577,25 @@ _fx55:
 _fx65:
 	; Load registers from memory at I
 	cmpi	r5 0x65
-	jumpif	neq _von_neumann
+	jumpif	neq _fx75
 	let	r1 r4
 	call	mem_load
+	jump	_von_neumann
+
+_fx75:
+	; Save registers to flags register (HP48)
+	cmpi	r5 0x75
+	jumpif	neq _fx85
+	let	r1 r4
+	call	mem_flags_dump
+	jump	_von_neumann
+
+_fx85:
+	; Load register from flags register (HP48)
+	cmpi	r5 0x85
+	jumpif	neq _von_neumann
+	let	r1 r4
+	call	mem_flags_load
 	jump	_von_neumann
 
 _main_end:
