@@ -4,6 +4,9 @@
 #include <ctype.h>
 #include <stdint.h>
 
+#include <unistd.h>
+#include <signal.h>
+
 #include <defs.h>
 #include <errors.h>
 #include <memory.h>
@@ -214,6 +217,40 @@ void quit(void)
 }
 
 /*
+	sigh()
+	Signal handler for graceful program termination on crash.
+
+	@arg	signum	Identifier of received signal.
+*/
+void sigh(int signum)
+{
+	/* Prevent the terminal from getting screwed up */
+	endwin();
+	/* Free the resources used by the emulator, as in normal termination */
+	quit();
+
+	/* Since we override the default handler, we need to provide
+	   information on what went wrong by ourselves */
+	if(signum == SIGINT)
+		write(STDERR_FILENO, "Interrupted.\n", 13);
+	else if(signum == SIGSEGV)
+		write(STDERR_FILENO, "Segmentation fault!\n", 20);
+	else if(signum == SIGTERM)
+		write(STDERR_FILENO, "Terminated.\n", 12);
+	else
+	{
+		char str[] = "Killed by signal __.\n";
+		str[17] = '0' + signum / 10;
+		str[18] = '0' + signum % 10;
+		write(STDERR_FILENO, str, 20);
+	}
+
+	/* exit() is not async-signal-safe because of exit handlers, however
+	   _exit() is */
+	_exit(2);
+}
+
+/*
 	main()
 	In a normal execution flow, parses the command-line arguments, creates
 	a virtual CPU and memory, loads the provided file into memory, then
@@ -225,7 +262,22 @@ void quit(void)
 */
 int main(int argc, char **argv)
 {
+	/* Register the exit handler for normal program termination */
 	atexit(quit);
+
+	/* Install some signal handlers in case the emulator crashes or is
+	   interrupted by the user */
+	struct sigaction action = { 0 };
+	action.sa_handler	= sigh;
+	action.sa_flags		= SA_RESTART;
+	sigemptyset(&action.sa_mask);
+
+	/* SIGINT: Interrupted by Ctrl+C */
+	sigaction(SIGINT,  &action, NULL);
+	/* SIGSEGV: Segmentation faults */
+	sigaction(SIGSEGV, &action, NULL);
+	/* SIGTERM: Killed by user/system (often) */
+	sigaction(SIGTERM, &action, NULL);
 
 	/* Parse command-line arguments */
 	opt_t opt;
@@ -280,7 +332,7 @@ int main(int argc, char **argv)
 		debugger(opt.filename, cpu);
 
 		/* By contrast, the debugger mode can only end when the user
-		   explicity requires it, so close the window immediately */
+		   explicitly requires it, so close the window immediately */
 		graphical_stop();
 	}
 
