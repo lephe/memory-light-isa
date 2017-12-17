@@ -14,6 +14,10 @@
 #include <debugger.h>
 #include <graphical.h>
 
+/* I wished to have limited the use of SDL to graphical.h, but I need it here
+   to map some keyboard keys to Chip8's 16 keys */
+#include <SDL2/SDL.h>
+
 //---
 //	Command-line parsing
 //---
@@ -27,6 +31,7 @@ typedef struct
 	uint debugger	:1;
 	uint graphical	:1;
 	uint help	:1;
+	uint chip8	:1;
 
 	struct {
 		uint64_t text;
@@ -113,12 +118,7 @@ static int read_load(const char *arg, opt_t *opt)
 static void parse_args(int argc, char **argv, opt_t *opt)
 {
 	/* Clear structure with default values */
-	opt->debugger = opt->graphical = 0;
-	opt->help = 0;
-	opt->text = opt->stack = opt->data = opt->vram = 0;
-	opt->filename = NULL;
-	opt->load_addr = 0;
-	opt->load_file = NULL;
+	*opt = (opt_t){ 0 };
 
 	error_clear();
 
@@ -151,6 +151,9 @@ static void parse_args(int argc, char **argv, opt_t *opt)
 			else if(read_load(arg, opt))
 				error("invalid load argument: '%s'", arg);
 		}
+
+		/* Special handlers for the Chip8 emulator */
+		else if(!strcmp(arg, "--chip8")) opt->chip8 = 1;
 
 		/* Help message */
 		else if(!strcmp(arg, "--help")) opt->help = 1;
@@ -239,7 +242,7 @@ void sigh(int signum)
 		write(STDERR_FILENO, "Terminated.\n", 12);
 	else
 	{
-		char str[] = "Killed by signal __.\n";
+		char str[] = "Killed by signal <>.\n";
 		str[17] = '0' + signum / 10;
 		str[18] = '0' + signum % 10;
 		write(STDERR_FILENO, str, 20);
@@ -248,6 +251,52 @@ void sigh(int signum)
 	/* exit() is not async-signal-safe because of exit handlers, however
 	   _exit() is */
 	_exit(2);
+}
+
+/*
+	chip8()
+	Emulator callback that maintains counters and keyboard state in the
+	chip8 emulator's memory. This function is controlled by the --chip8
+	switch.
+	This function is not executed from the main thread! This must be the
+	only thread that accesses the timer counters in write mode, and it must
+	do it atomically, to prevent data races.
+*/
+void chip8(uint8_t *keyboard, void *arg)
+{
+	cpu_t *cpu = arg;
+	uint64_t timer_delay	= 0x881e0, delay;
+	uint64_t timer_audio	= 0x881f0, audio;
+	uint64_t timer_cpufreq	= 0x88240, cpufreq;
+
+	delay = memory_read(cpu->mem, timer_delay, 8);
+	if(delay) memory_write(cpu->mem, timer_delay, delay - 1, 8);
+
+	audio = memory_read(cpu->mem, timer_audio, 8);
+	if(audio) memory_write(cpu->mem, timer_audio, audio - 1, 8);
+
+	cpufreq = memory_read(cpu->mem, timer_cpufreq, 8);
+	memory_write(cpu->mem, timer_cpufreq, cpufreq + 10, 8);
+
+	uint64_t keybuffer	= 0x881b0;
+
+	#define _(x) SDL_SCANCODE_ ## x
+	SDL_Scancode keys[16] = {
+		_(1), _(2), _(3), _(4),
+		_(Q), _(W), _(E), _(R),
+		_(A), _(S), _(D), _(F),
+		_(Z), _(X), _(C), _(V),
+	};
+	#undef _
+
+	uint16_t state = 0;
+	for(int i = 0; i < 16; i++)
+	{
+		state <<= 1;
+		if(keyboard[keys[i]]) state |= 1;
+	}
+
+	memory_write(cpu->mem, keybuffer, state, 16);
 }
 
 /*
@@ -306,7 +355,10 @@ int main(int argc, char **argv)
 	if(opt.graphical)
 	{
 		void *vram = (void *)mem->mem + (mem->vram >> 3);
-		if(graphical_start(160, 128, vram)) return 1;
+		int result = !opt.chip8
+			? graphical_start(160, 128, vram, NULL, NULL)
+			: graphical_start(160, 128, vram, chip8, cpu);
+		if(result) return 1;
 	}
 
 	if(!opt.debugger)

@@ -55,3 +55,29 @@ _bcd_one:
 	pop	64 r5
 	pop	64 r4
 	return
+
+; wait() -> wait for available execution cycles
+wait:
+	push	64 r6
+	getctr	a1 r0
+	push	64 r0
+
+	leti	r6 0x88240
+
+_wait_loop:
+	setctr	a1 r6
+	readze	a1 8 r0
+	readze	a1 8 r1
+	cmp	r0 r1
+	jumpif	eq _wait_loop
+
+	; Increase the number of instructions executed so far
+	add2i	r1 1
+	add2i	r6 8
+	setctr	a1 r6
+	write	a1 8 r1
+
+	pop	64 r0
+	setctr	a1 r0
+	pop	64 r6
+	return

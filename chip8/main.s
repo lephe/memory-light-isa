@@ -16,7 +16,16 @@ main:
 	; Load the character data in the beginning of the memory
 	call	load_hexa
 
+	; Set the frequency counter (limiter) to 0
+	leti	r6 0x1450
+	leti	r0 0
+	setctr	a1 r6
+	write	a1 8 r0
+
 _von_neumann:
+	; Wait until we can execute an instruction
+	call	wait
+
 	; Fetch an instruction code, and PC += 2
 	call	cpu_opcode
 
@@ -24,9 +33,12 @@ _von_neumann:
 	; a lot of poorly-written instruction decoding
 	let	r4 r0
 
-	; Debugging
+	; These few lines are intended for debugging purposes. The or2i r0 0
+	; instruction will only be executed when a specific opcode (which is
+	; specified in cmpi) is found. Placing a breakpoint on this or2i allows
+	; to quickly "jump" to a point in the chip8 program while debugging.
 debug:
-	cmpi	r4 0x1450
+	cmpi	r4 0x6e17
 	jumpif	neq debug_end
 debug_marker:
 	or2i	r0 0
@@ -392,7 +404,8 @@ _cxnn:
 	jumpif	ge _dxyn
 	call	rand
 	and3	r2 r0 r4
-	shift	left r4 8
+	and2i	r2 0xff
+	shift	right r4 8
 	and3i	r1 r4 0xf
 	call	cpu_setReg
 	jump	_von_neumann
@@ -431,8 +444,9 @@ _ex9e:
 	; snif key(vx) is pressed
 	cmpi	r5 0x9e
 	jumpif	neq _exa1
-	leti	r0 0x881b0 ; Key buffer
-	add2	r4 r0
+	let	r1 r4
+	call	cpu_getReg
+	add2i	r0 0x881b0 ; Key buffer
 	getctr	a0 r2
 	setctr	a0 r0
 	readze	a0 1 r1
@@ -441,7 +455,7 @@ _ex9e:
 	cmpi	r1 0
 	jumpif	z _von_neumann
 	call	cpu_getPC
-	add2i	r1 r0 2
+	add3i	r1 r0 2
 	call	cpu_setPC
 	jump	_von_neumann
 
@@ -449,8 +463,9 @@ _exa1:
 	; snif key(vx) is released
 	cmpi	r5 0xa1
 	jumpif	neq _von_neumann
-	leti	r0 0x881b0 ; Key buffer
-	add2	r4 r0
+	let	r1 r4
+	call	cpu_getReg
+	add2i	r0 0x881b0 ; Key buffer
 	getctr	a0 r2
 	setctr	a0 r0
 	readze	a0 1 r1
@@ -459,7 +474,7 @@ _exa1:
 	cmpi	r1 0
 	jumpif	nz _von_neumann
 	call	cpu_getPC
-	add2i	r1 r0 2
+	add3i	r1 r0 2
 	call	cpu_setPC
 	jump	_von_neumann
 
@@ -469,6 +484,7 @@ _fx07:
 	jumpif	neq _fx0a
 	leti	r0 0x881e0 ; Delay timer
 	getctr	a0 r1
+	setctr	a0 r0
 	readze	a0 8 r2
 	setctr	a0 r1
 	let	r1 r4
@@ -536,11 +552,9 @@ _fx29:
 	jumpif	neq _fx33
 	let	r1 r4
 	call	cpu_getReg
-	shift	left r0 3
 	let	r1 r0
 	shift	left r0 2
 	add2	r1 r0
-	add2i	r1 0x80000 ; Start of memory
 	call	cpu_setI
 	jump	_von_neumann
 

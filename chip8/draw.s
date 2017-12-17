@@ -84,7 +84,7 @@ draw:
 	push	64 r7
 
 	; Get destination pointer
-	leti	r0 0x101e30 ; VRAM base
+	leti	r0 0x114300 ; VRAM base
 	shift	left r2 9
 	add2	r0 r2
 	shift	left r2 2
@@ -117,8 +117,8 @@ _draw_loop:
 	or2	r5 r3
 	setctr	a1 r2
 
-	; Change the color of the pixel
-	leti	r0 0xffff
+	; Flip the color of the pixel
+	xor3i	r0 r3 0xffff
 	write	a1 16 r0
 	jump	_draw_next
 
@@ -143,7 +143,11 @@ _draw_newline:
 _draw_end:
 	; Collision results
 	leti	r1 15
-	and3i	r2 r5 1
+	leti	r2 1
+	cmpi	r5 0
+	jumpif	nz _draw_collision
+	leti	r2 0
+_draw_collision:
 	call	cpu_setReg
 
 	pop	64 r7

@@ -28,10 +28,14 @@ static Uint32 event_user;
 
 /* More SDL objects owned by the main thread but used by the screen thread
    (Safety policy: all memory management is performed by the main thread) */
-SDL_Window *window	= NULL;
-SDL_Renderer *renderer	= NULL;
-SDL_Texture *texture	= NULL;
-SDL_TimerID timer	= 0;
+static SDL_Window *window	= NULL;
+static SDL_Renderer *renderer	= NULL;
+static SDL_Texture *texture	= NULL;
+static SDL_TimerID timer	= 0;
+
+/* Callback function and argument for use by the emulator */
+static void (*callback)(uint8_t *keyboard, void *arg) = NULL;
+static void *callback_arg = NULL;
 
 
 
@@ -70,7 +74,8 @@ static void send_event(int type, void *data1, void *data2)
 }
 
 /* graphical_start() - start the SDL thread for the screen */
-int graphical_start(size_t width, size_t height, void *vram)
+int graphical_start(size_t width, size_t height, void *vram,
+	void (*func)(uint8_t *keyboard, void *funcarg), void *funcarg)
 {
 	/* Shorthand for error management */
 	#define fail(format, ...) {			\
@@ -136,6 +141,10 @@ int graphical_start(size_t width, size_t height, void *vram)
 		fail("cannot start the timer: %s", SDL_GetError());
 #endif
 
+	/* Save the callback info */
+	callback = func;
+	callback_arg = funcarg;
+
 	/* Time to let the thread run! */
 	return 0;
 }
@@ -198,7 +207,12 @@ void graphical_stop(void)
 
 static Uint32 timer_handler(Uint32 interval, __attribute__((unused)) void *arg)
 {
+	/* Send a refresh event to the screen thread */
 	send_event(EV_REFRESH, NULL, NULL);
+
+	/* Call back the emulator, if requested */
+	if(callback) callback(SDL_GetKeyboardState(NULL), callback_arg);
+
 	return interval;
 }
 
@@ -286,6 +300,6 @@ int thread_main(void *args_void)
 	   closes the window early, we want it to disappear quickly */
 	SDL_HideWindow(window);
 
-	/* Simply leave, the main thread will clean up everyhing */
+	/* Simply leave, the main thread will clean up everything */
 	return 0;
 }

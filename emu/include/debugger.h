@@ -130,7 +130,6 @@ void debugger_memory_move(uint64_t address);
 */
 void debugger_memory(void);
 
-
 /*
 	dbglog() -- print messages to the console
 

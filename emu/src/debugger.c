@@ -22,6 +22,9 @@ memory_t *debugger_mem	= NULL;		/* Debugged memory */
 /* Execution state */
 debugger_state_t debugger_state = state_idle;
 
+/* Do we have to draw the memory panel again soon? */
+static int memory_later = 0;
+
 static void draw_reg(void);
 
 
@@ -114,6 +117,7 @@ static void cmd_run_cpu(int steps)
 	while(cpu->ptr[PC] < debugger_mem->text && steps)
 	{
 		cpu_execute(cpu);
+
 		if(steps > 0) steps--;
 		if(cpu->h) break;
 

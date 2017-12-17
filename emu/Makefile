@@ -10,7 +10,7 @@ src	= $(wildcard src/*.c)
 obj	= $(src:src/%=build/%.o)
 
 # _DEFAULT_SOURCE is for endian.h
-cflags	= -Wall -Wextra -std=c11 -I include -D_DEFAULT_SOURCE
+cflags	= -Wall -Wextra -std=c11 -I include -D_DEFAULT_SOURCE -O2
 dflags	= -MT $@ -MMD -MP -MF $(@:.o=.d)
 lflags	= $(cflags) -lncurses -lSDL2
 

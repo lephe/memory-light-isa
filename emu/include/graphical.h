@@ -6,6 +6,7 @@
 #define GRAPHICAL_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 /*
 	graphical_start() - start the SDL thread for the screen
@@ -14,12 +15,17 @@
 	The screen has 16-bit depth so the size of the video RAM should be
 	2 * width * height (bytes).
 
-	@arg	width	Screen width
-	@arg	height	Screen height
-	@arg	vram	Video memory source
-	@returns	Zero on success, non-zero on error
+	@arg	width		Screen width
+	@arg	height		Screen height
+	@arg	vram		Video memory source
+	@arg	func		Callback function that will be called at 60 Hz
+		keyboard	Key buffer provided by the SDL
+		funcarg		Custom argument provided by the caller
+	@arg	funcarg		Argument for the callback function
+	@returns		Zero on success, non-zero on error
 */
-int graphical_start(size_t width, size_t height, void *vram);
+int graphical_start(size_t width, size_t height, void *vram,
+	void (*func)(uint8_t *keyboard, void *funcarg), void *funcarg);
 
 /*
 	graphical_refresh() - send a refresh signal to the SDL thread
