@@ -34,7 +34,7 @@ static SDL_Texture *texture	= NULL;
 static SDL_TimerID timer	= 0;
 
 /* Callback function and argument for use by the emulator */
-static void (*callback)(uint8_t *keyboard, void *arg) = NULL;
+static void (*callback)(const uint8_t *keyboard, void *arg) = NULL;
 static void *callback_arg = NULL;
 
 
@@ -75,7 +75,8 @@ static void send_event(int type, void *data1, void *data2)
 
 /* graphical_start() - start the SDL thread for the screen */
 int graphical_start(size_t width, size_t height, void *vram,
-	void (*func)(uint8_t *keyboard, void *funcarg), void *funcarg)
+	void (*func)(const uint8_t *keyboard, void *funcarg), void *funcarg,
+	int scale)
 {
 	/* Shorthand for error management */
 	#define fail(format, ...) {			\
@@ -101,8 +102,8 @@ int graphical_start(size_t width, size_t height, void *vram,
 
 	/* Create a new window */
 	window = SDL_CreateWindow("ASN1 2017: Program emulator",
-		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 2 * width,
-		2 * height, 0);
+		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, scale * width,
+		scale * height, 0);
 	if(!window)
 		fail("cannot create window: %s", SDL_GetError());
 
@@ -112,7 +113,7 @@ int graphical_start(size_t width, size_t height, void *vram,
 	if(!renderer)
 		fail("cannot create renderer: %s", SDL_GetError());
 
-	SDL_RenderSetScale(renderer, 2, 2);
+	SDL_RenderSetScale(renderer, scale, scale);
 
 	/* Create a texture where we will render our screen data. This format
 	   will slow down the rendering (~400 FPS instead of ~1000 FPS) but it

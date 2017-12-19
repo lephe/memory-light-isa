@@ -2,7 +2,7 @@
 clear_screen:
 	; Load VRAM pointer and counter
 	leti	r0 0x100000 ; VRAM base
-	leti	r3 640
+	leti	r3 160
 	getctr	a0 r2
 	setctr	a0 r0
 
@@ -84,10 +84,8 @@ draw:
 	push	64 r7
 
 	; Get destination pointer
-	leti	r0 0x114300 ; VRAM base
-	shift	left r2 9
-	add2	r0 r2
-	shift	left r2 2
+	leti	r0 0x100000 ; VRAM base
+	shift	left r2 10
 	add2	r0 r2
 	shift	left r1 4
 	add2	r0 r1
@@ -133,7 +131,7 @@ _draw_next:
 
 _draw_newline:
 	getctr	a1 r2
-	add2i	r2 2432
+	add2i	r2 896
 	setctr	a1 r2
 
 	leti	r1 8

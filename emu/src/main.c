@@ -227,6 +227,22 @@ void quit(void)
 */
 void sigh(int signum)
 {
+        size_t *counts = cpu_counts();
+
+        for(uint i = 0; i < DISASM_INS_COUNT; i++)
+        {
+                const char *format = disasm_format(i);
+                printf("  %6s %-6zu", format + 6, counts[i]);
+                if((i & 7) == 7) printf("\n");
+        }
+
+        if((DISASM_INS_COUNT & 7) != 7) printf("\n");
+
+
+
+
+
+
 	/* Prevent the terminal from getting screwed up */
 	endwin();
 	/* Free the resources used by the emulator, as in normal termination */
@@ -262,7 +278,7 @@ void sigh(int signum)
 	only thread that accesses the timer counters in write mode, and it must
 	do it atomically, to prevent data races.
 */
-void chip8(uint8_t *keyboard, void *arg)
+void chip8(const uint8_t *keyboard, void *arg)
 {
 	cpu_t *cpu = arg;
 	uint64_t timer_delay	= 0x881e0, delay;
@@ -356,8 +372,8 @@ int main(int argc, char **argv)
 	{
 		void *vram = (void *)mem->mem + (mem->vram >> 3);
 		int result = !opt.chip8
-			? graphical_start(160, 128, vram, NULL, NULL)
-			: graphical_start(160, 128, vram, chip8, cpu);
+			? graphical_start(160, 128, vram, NULL, NULL, 2)
+			: graphical_start(64, 32, vram, chip8, cpu, 4);
 		if(result) return 1;
 	}
 

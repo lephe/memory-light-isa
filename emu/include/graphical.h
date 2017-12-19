@@ -22,10 +22,12 @@
 		keyboard	Key buffer provided by the SDL
 		funcarg		Custom argument provided by the caller
 	@arg	funcarg		Argument for the callback function
+	@arg	scale		Pixel scaling (2 on normal mode)
 	@returns		Zero on success, non-zero on error
 */
 int graphical_start(size_t width, size_t height, void *vram,
-	void (*func)(uint8_t *keyboard, void *funcarg), void *funcarg);
+	void (*func)(const uint8_t *keyboard, void *funcarg), void *funcarg,
+	int scale);
 
 /*
 	graphical_refresh() - send a refresh signal to the SDL thread

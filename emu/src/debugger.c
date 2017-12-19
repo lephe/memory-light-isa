@@ -256,7 +256,7 @@ static void cmd_counts(void)
 	for(uint i = 0; i < DISASM_INS_COUNT; i++)
 	{
 		const char *format = disasm_format(i);
-		dbglog("  %6s %-6u", format + 6, counts[i]);
+		dbglog("  %6s %-6zu", format + 6, counts[i]);
 		if((i & 7) == 7) dbglog("\n");
 	}
 
