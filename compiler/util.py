@@ -85,13 +85,19 @@ def huffman(ctr):
     # clés de c. Heap est un tas-min pour des raisons de performance.
 
     forest = []
-    for key, freq in ctr.most_common():
+    if type(ctr) is collections.Counter:
+        for key, freq in ctr.most_common():
 
-        # Initialisation : On fabrique une foret de feuilles. On ne garde en
-        # mémoire que les feuilles et le chemin (en binaire) pour acceder à la
-        # feuille.
+            # Initialisation : On fabrique une foret de feuilles. On ne garde
+            # en mémoire que les feuilles et le chemin (en binaire) pour
+            # acceder à la feuille.
 
-        forest.append((freq, [("", key)]))
+            forest.append((freq, [("", key)]))
+
+    else:
+        for key, freq in ctr.items():
+            forest.append((freq, [("", key)]))
+
 
     if len(forest) is 0:
         return []

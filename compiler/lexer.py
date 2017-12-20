@@ -22,7 +22,7 @@ class Lexer(object):
         # Operators
         token_specification[LexType.OPERATION]  = r'\b(?:add|sub|cmp|let|shift|readze|readse|' + \
                            r'jump|or|and|write|call|setctr|getctr|push|' +\
-                           r'return|xor|asr|pop)\b'
+                           r'return|xor|asr|pop|sleep)\b'
 
         # Values
         token_specification[LexType.COMMENT]     = r';(?:.|[ \t])*'
