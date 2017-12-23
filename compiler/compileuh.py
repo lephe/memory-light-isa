@@ -151,7 +151,7 @@ default_opcode = {
     "xor3":    "1111010",
     "xor3i":   "1111011",
     "asr3":    "1111100",
-    "reserved1":   "1111101",
+    "sleep":   "1111101",
     "reserved2":   "1111110",
     "reserved3":   "1111111"}
 
