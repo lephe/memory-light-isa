@@ -34,7 +34,8 @@ possible_transition = {
     "pop":    ["pop"],
     "label":  ["label"],
     "const":  ["const"],
-    "sleep" : ["sleep"]}
+    "sleep":  ["sleep"],
+    "rand":   ["rand"]}
 
 
 VT = ValueType
@@ -108,7 +109,8 @@ asr_specs = {
 
     "label":       (VT.LABEL,),
     "const":       (VT.UCONSTANT, VT.BINARY),
-    "sleep":       (VT.UCONSTANT,)}
+    "sleep":       (VT.UCONSTANT,),
+    "rand":       (VT.REGISTER,)}
 
 del VT
 
@@ -152,7 +154,7 @@ default_opcode = {
     "xor3i":   "1111011",
     "asr3":    "1111100",
     "sleep":   "1111101",
-    "reserved2":   "1111110",
+    "rand":    "1111110",
     "reserved3":   "1111111"}
 
 
