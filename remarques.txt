@@ -1,20 +1,75 @@
 # Remarques sur l'architecture
 
-Le fichier a été mis à jour pour le rendu 2. Les nouveaux points portent
-essentiellement sur la gestion de la mémoire :
+Le fichier a été mis à jour pour le rendu 3. Les statistiques confirment
+essentiellement ce qui a été suggéré plus tôt :
+
+- Quelques statistiques d'utilisation
+
+Les remarques du rendu 2 portaient sur la gestion de la mémoire :
 
 - L'unique mode d'adressage
 - Les compteurs disjoints des registres
 - Une note sur l'argument de call
 
-Les remarques du rendu 1 étaient les suivantes et concernaient le jeu
-d'instructions :
+Finalement, les remarques du rendu 1 concernaient le jeu d'instructions :
 
 - Les fonctions de calcul de base
 - L'absence de décalage de bits dynamique
 - Le choix de `addi` et `subi` non-signés
 - Le bit de direction de `shift`
 - Les sauts absolus signés (Sébastien)
+
+
+
+## Quelques statistiques d'utilisation
+
+Voilà ce qui se passe en termes de nombre d'instructions durant une partie de
+BRIX d'une bonne minute:
+
+    add2   324696     add2i  341633     sub2   0          sub2i  161537
+    cmp    140921     cmpi   1629180    let    823713     leti   807787
+    shift  471559     readze 1329892    readse 0          jump   173606
+    jumpif 1933171    or2    60809      or2i   0          and2   0
+    and2i  89856      write  391101     call   815274     setctr 1743155
+    getctr 891339     push   517084     return 815273     add3   191
+    add3i  131881     sub3   900        sub3i  0          and3   11839
+    and3i  145315     or3    0          or3i   0          xor3   95
+    xor3i  60561      asr3   0          sleep  10870
+
+    Total  13823238
+
+On peut déjà repérer les grands perdants : les instructions logiques sont
+rarement exécutées. Évidemment, l'émulateur Chip8 ne présage pas de la
+généralité, mais or3, or3i, and3 et and3i pourraient être les premières cibles
+s'il fallait réduire le nombre d'instructions à trois opérandes.
+
+Du reste, le top 10 des instructions les plus utilisées est :
+
+    1.  jumpif   1933171   (13.98 %)
+    2.  setctr   1743155   (12.61 %)
+    3.  cmpi     1629180   (11.78 %)
+    4.  readze   1329892    (9.62 %)
+    5.  getctr    891339    (6.44 %)
+    6.  let       823713    (5.95 %)
+    7.  call      815274    (5.89 %)
+    8.  return    815273    (5.89 %)
+    9.  leti      807787    (5.84 %)
+   10.  push      517084    (3.74 %)
+
+Typiquement, les opérations de décision (plus de 25 % de cmpi et jumpif) se
+rapprochent de la quantité de snif de l'année dernière. On observe aussi un
+nombre stratosphérique de getctr/setctr (19.05 %) qu'on avait vu venir (en tout
+cas c'est dans les remarques plus bas). Il y a certainement quelque chose à
+gagner ici.
+
+Le nombre de readze inclut tous les pop, et il y en a autant que des push (si
+tout de passe bien, ce qui était le cas lors de cette partie) ; ça nous laisse
+avec un demi-million d'opérations de pile. Il y en a beaucoup parce que j'ai
+mis beaucoup de fonctions dans le code de l'émulateur (voir le nombre de call/
+return).
+
+En tous cas, l'interface avec la mémoire est très utilisée donc probablement
+pas à négliger. Du reste, let et leti étaient parfaitement attendus en nombre.
 
 
 

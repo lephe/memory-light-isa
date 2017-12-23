@@ -20,5 +20,3 @@ subject/simu
 # Chip8 compiled programs and examples games
 chip8/*.bin
 chip8/*.obj
-chip8/GAMES/SOURCES/***
-
