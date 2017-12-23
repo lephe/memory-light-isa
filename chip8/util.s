@@ -69,8 +69,13 @@ _wait_loop:
 	readze	a1 8 r0
 	readze	a1 8 r1
 	cmp	r0 r1
-	jumpif	eq _wait_loop
+	jumpif	neq _wait_end
 
+	; sleep 0
+	.const	9 #111110100
+	jump	_wait_loop
+
+_wait_end:
 	; Increase the number of instructions executed so far
 	add2i	r1 1
 	add2i	r6 8

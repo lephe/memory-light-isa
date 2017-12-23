@@ -107,7 +107,7 @@ int graphical_start(size_t width, size_t height, void *vram,
 	if(!window)
 		fail("cannot create window: %s", SDL_GetError());
 
-	/* Create a renderer for this window. Stick to good ol' sofwtare
+	/* Create a renderer for this window. Stick to good old software
 	   rendering because others leak at lot of memory (20 MB) */
 	renderer = SDL_CreateRenderer(window, -1,  SDL_RENDERER_SOFTWARE);
 	if(!renderer)

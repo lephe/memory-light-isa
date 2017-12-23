@@ -3,6 +3,7 @@
 #include <disasm.h>
 #include <cpu.h>
 #include <util.h>
+#include <unistd.h>
 
 /* cpu_new() -- create a CPU and give it a memory */
 cpu_t *cpu_new(memory_t *mem)
@@ -268,7 +269,7 @@ static void and2i(cpu_t *cpu)
 	set_flags(cpu, cpu->r[rd], 0, -1);
 }
 
-static void write(cpu_t *cpu)
+static void _write(cpu_t *cpu)
 {
 	uint ptr = get(pointer), size = get(size), rs = get(reg);
 	memory_write(cpu->mem, cpu->ptr[ptr], cpu->r[rs], size);
@@ -422,9 +423,14 @@ static void asr3(cpu_t *cpu)
 
 /* TODO - Use a proper debugger-related exception handling scheme for these */
 
-static void res_0(cpu_t *cpu)
+static void _sleep(cpu_t *cpu)
 {
-	fatal("invalid opcode at %x (1111101)", cpu->ptr[PC]);
+	cpu->sleep = 1;
+	__attribute__((unused))
+	uint64_t cst = get(lconst, NULL);
+
+	do pause();
+	while(cpu->sleep);
 }
 
 static void res_1(cpu_t *cpu)
@@ -443,11 +449,11 @@ static void (*instructions[DISASM_INS_COUNT])(cpu_t *cpu) = {
 	cmp,		cmpi,		let,		leti,
 	shift,		readze,		readse,		jump,
 	jumpif,		or2,		or2i,		and2,
-	and2i,		write,		call,		setctr,
+	and2i,		_write,		call,		setctr,
 	getctr,		push,		_return,	add3,
 	add3i,		sub3,		sub3i,		and3,
 	and3i,		or3,		or3i,		xor3,
-	xor3i,		asr3,		res_0,		res_1,
+	xor3i,		asr3,		_sleep,		res_1,
 	res_2,
 };
 

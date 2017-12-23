@@ -33,7 +33,7 @@ static const char instructions[37][16] = {
 	"pr- C getctr",	"sr- M push",	"--- J return",	"rrr A add3",
 	"rrl A add3i",	"rrr A sub3",	"rrl A sub3i",	"rrr A and3",
 	"rrl A and3i",	"rrr A or3",	"rrl A or3i",	"rrr A xor3",
-	"rrl A xor3i",	"rrh A asr3",	"--- C (res)",	"--- C (res)",
+	"rrl A xor3i",	"rrh A asr3",	"l-- C sleep",	"--- C (res)",
 	"--- C (res)",
 };
 

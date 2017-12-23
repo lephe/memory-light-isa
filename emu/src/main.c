@@ -184,18 +184,20 @@ const char *help_string =
 "usage: %s [-r|-d] [-g] <binary> [options...]\n\n"
 
 "Available run modes (default is -r):\n"
-"  -r | --run         Normal execution, shows CPU state when program ends\n"
+"  -r | --run	 Normal execution, shows CPU state when program ends\n"
 "  -d | --debug       Run the debugger: step-by-step, breakpoints, etc\n"
 "  -g | --graphical   With -r or -d, enable graphical I/O using SDL\n\n"
 
 "Available options:\n"
 "  --geometry <text>:<stack>:<data>:<vram>\n"
-"                     Set the size of the four memory segments ('k' or 'M'\n"
-"                     suffixes may be used)\n";
+"		     Set the size of the four memory segments ('k' or 'M'\n"
+"		     suffixes may be used)\n";
 
 /* Emulated memory and CPU */
 static memory_t *mem	= NULL;
 static cpu_t *cpu	= NULL;
+/* PID of the main thread */
+pid_t main_thread	= 0;
 
 /*
 	help()
@@ -227,21 +229,16 @@ void quit(void)
 */
 void sigh(int signum)
 {
-        size_t *counts = cpu_counts();
+	size_t *counts = cpu_counts();
 
-        for(uint i = 0; i < DISASM_INS_COUNT; i++)
-        {
-                const char *format = disasm_format(i);
-                printf("  %6s %-6zu", format + 6, counts[i]);
-                if((i & 7) == 7) printf("\n");
-        }
+	for(uint i = 0; i < DISASM_INS_COUNT; i++)
+	{
+		const char *format = disasm_format(i);
+		printf("  %6s %-6zu", format + 6, counts[i]);
+		if((i & 7) == 7) printf("\n");
+	}
 
-        if((DISASM_INS_COUNT & 7) != 7) printf("\n");
-
-
-
-
-
+	if((DISASM_INS_COUNT & 7) != 7) printf("\n");
 
 	/* Prevent the terminal from getting screwed up */
 	endwin();
@@ -267,6 +264,17 @@ void sigh(int signum)
 	/* exit() is not async-signal-safe because of exit handlers, however
 	   _exit() is */
 	_exit(2);
+}
+
+/*
+	sigh_sleep()
+	Signal handler for sleep events.
+
+	@arg	signum	Signal id (always SIGUSR1)
+*/
+void sigh_sleep(__attribute__((unused)) int sigusr1)
+{
+	cpu->sleep = 0;
 }
 
 /*
@@ -313,6 +321,9 @@ void chip8(const uint8_t *keyboard, void *arg)
 	}
 
 	memory_write(cpu->mem, keybuffer, state, 16);
+
+	/* Wake up the sleeping processor */
+	kill(main_thread, SIGUSR1);
 }
 
 /*
@@ -330,6 +341,8 @@ int main(int argc, char **argv)
 	/* Register the exit handler for normal program termination */
 	atexit(quit);
 
+	main_thread = getpid();
+
 	/* Install some signal handlers in case the emulator crashes or is
 	   interrupted by the user */
 	struct sigaction action = { 0 };
@@ -343,6 +356,15 @@ int main(int argc, char **argv)
 	sigaction(SIGSEGV, &action, NULL);
 	/* SIGTERM: Killed by user/system (often) */
 	sigaction(SIGTERM, &action, NULL);
+
+	/* And some other handler to handle deep sleep */
+	action.sa_handler	= sigh_sleep;
+	action.sa_flags		= SA_RESTART;
+	sigemptyset(&action.sa_mask);
+
+	/* SIGUSR1: Waken by timer */
+	int x = sigaction(SIGUSR1, &action, NULL);
+	printf("%d\n", x);
 
 	/* Parse command-line arguments */
 	opt_t opt;

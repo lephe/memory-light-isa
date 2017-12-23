@@ -40,6 +40,7 @@ typedef struct
 	uint h	:1;		/* Halt, detects loops of one instruction */
 	uint m	:1;		/* Memory, indicates changes to memory */
 	uint t	:1;		/* Counter, signals counter changes */
+	volatile uint sleep :1;	/* Current sleeping */
 
 	uint64_t ptr[4];	/* There are no pointers among r0..r7 */
 } cpu_t;
