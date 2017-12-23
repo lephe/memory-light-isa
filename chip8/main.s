@@ -5,10 +5,6 @@ main:
 	leti	r1 0x200
 	call	cpu_setPC
 
-	; Initialize RNG
-	leti	r1 1
-	call	srand
-
 	; Clear the screen to black
 	leti	r1 0x0000
 	call	clear_screen
@@ -402,7 +398,10 @@ _cxnn:
 	; vx = rand() & 0xnn
 	cmpi	r4 0xd000
 	jumpif	ge _dxyn
-	call	rand
+
+	; rand r0
+	.const 10 #1111110000
+
 	and3	r2 r0 r4
 	and2i	r2 0xff
 	shift	right r4 8
@@ -617,7 +616,6 @@ _main_end:
 
 	.include cpu.s
 	.include mem.s
-	.include rand.s
 	.include util.s
 	.include draw.s
 	.include keyboard.s

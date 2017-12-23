@@ -24,6 +24,8 @@ cpu_t *cpu_new(memory_t *mem)
 
 	cpu->h = 0;
 	cpu->m = 0;
+	cpu->t = 0;
+	cpu->s = 0;
 
 	/* Initialize pointers according to the memory geometry */
 	cpu->ptr[PC] = 0x0000000000000000l;
@@ -433,9 +435,10 @@ static void _sleep(cpu_t *cpu)
 	while(cpu->sleep);
 }
 
-static void res_1(cpu_t *cpu)
+static void _rand(cpu_t *cpu)
 {
-	fatal("invalid opcode at %x (1111110)", cpu->ptr[PC]);
+	uint rd = get(reg);
+	cpu->r[rd] = ((uint64_t)rand() << 32) | rand();
 }
 
 static void res_2(cpu_t *cpu)
@@ -453,7 +456,7 @@ static void (*instructions[DISASM_INS_COUNT])(cpu_t *cpu) = {
 	getctr,		push,		_return,	add3,
 	add3i,		sub3,		sub3i,		and3,
 	and3i,		or3,		or3i,		xor3,
-	xor3i,		asr3,		_sleep,		res_1,
+	xor3i,		asr3,		_sleep,		_rand,
 	res_2,
 };
 

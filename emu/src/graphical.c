@@ -2,6 +2,9 @@
 #include <errors.h>
 #include <SDL2/SDL.h>
 
+#include <unistd.h>
+#include <signal.h>
+
 /* Arguments to be passed to the thread */
 struct thread_args
 {
@@ -300,6 +303,10 @@ int thread_main(void *args_void)
 	   the window when quitting SDL after emulation stops. If the user
 	   closes the window early, we want it to disappear quickly */
 	SDL_HideWindow(window);
+
+	/* Let the main thread know that we've done all this */
+	extern pid_t main_thread;
+	kill(main_thread, SIGUSR2);
 
 	/* Simply leave, the main thread will clean up everything */
 	return 0;

@@ -22,9 +22,6 @@ memory_t *debugger_mem	= NULL;		/* Debugged memory */
 /* Execution state */
 debugger_state_t debugger_state = state_idle;
 
-/* Do we have to draw the memory panel again soon? */
-static int memory_later = 0;
-
 static void draw_reg(void);
 
 
@@ -119,7 +116,7 @@ static void cmd_run_cpu(int steps)
 		cpu_execute(cpu);
 
 		if(steps > 0) steps--;
-		if(cpu->h) break;
+		if(cpu->h || cpu->s) break;
 
 		/* Also break if a breakpoint is reached */
 		if(break_has(cpu->ptr[PC]))
@@ -140,7 +137,7 @@ static void cmd_run_cpu(int steps)
 	   that was written to is not visible */
 	if(cpu->m) debugger_memory();
 
-	if(cpu->h) debugger_state = state_halt;
+	if(cpu->h || cpu->s) debugger_state = state_halt;
 }
 
 static void cmd_step(int argc, char **argv)
@@ -424,7 +421,7 @@ void debugger(const char *filename, cpu_t *cpu)
 	char *cmd, **argv;
 	int argc;
 
-	while(1)
+	while(!cpu->s)
 	{
 		/* Get a string, and find out the command name */
 		cmd = debugger_prompt(&argv);

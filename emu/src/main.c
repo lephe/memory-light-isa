@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdint.h>
+#include <time.h>
 
 #include <unistd.h>
 #include <signal.h>
@@ -214,7 +215,7 @@ const char *help_string =
 /* Emulated memory and CPU */
 static memory_t *mem	= NULL;
 static cpu_t *cpu	= NULL;
-/* PID of the main thread */
+/* PID of the main thread - this variable is also used by graphical.c */
 pid_t main_thread	= 0;
 
 /*
@@ -266,7 +267,7 @@ void sigh(int signum)
 	/* Since we override the default handler, we need to provide
 	   information on what went wrong by ourselves */
 	if(signum == SIGINT)
-		write(STDERR_FILENO, "Interrupted.\n", 13);
+		write(STDERR_FILENO, "Bye!\n", 5);
 	else if(signum == SIGSEGV)
 		write(STDERR_FILENO, "Segmentation fault!\n", 20);
 	else if(signum == SIGTERM)
@@ -281,18 +282,24 @@ void sigh(int signum)
 
 	/* exit() is not async-signal-safe because of exit handlers, however
 	   _exit() is */
-	_exit(2);
+	_exit((signum == SIGINT) ? 0 : 2);
 }
 
 /*
-	sigh_sleep()
-	Signal handler for sleep events.
-
-	@arg	signum	Signal id (always SIGUSR1)
+	sigh_sleep() -- signal handler for sleep events.
 */
 void sigh_sleep(__attribute__((unused)) int sigusr1)
 {
 	cpu->sleep = 0;
+}
+
+/*
+	sigh_close() -- signal handler for "graphical window closed" events
+*/
+void sigh_close(__attribute__((unused)) int sigusr2)
+{
+	/* Make the CPU halt */
+	cpu->s = 1;
 }
 
 /*
@@ -359,10 +366,16 @@ int main(int argc, char **argv)
 	/* Register the exit handler for normal program termination */
 	atexit(quit);
 
+	/* Intialize the RNG (which is used by the rand instruction) */
+	srand(clock());
+
+	//---
+	//	Setup some signal handling
+	//---
+
 	main_thread = getpid();
 
-	/* Install some signal handlers in case the emulator crashes or is
-	   interrupted by the user */
+	/* Gracefully catch some termination events or user interruptions */
 	struct sigaction action = { 0 };
 	action.sa_handler	= sigh;
 	action.sa_flags		= SA_RESTART;
@@ -375,13 +388,25 @@ int main(int argc, char **argv)
 	/* SIGTERM: Killed by user/system (often) */
 	sigaction(SIGTERM, &action, NULL);
 
-	/* And some other handler to handle deep sleep */
+	/* Add a SIGUSR1 handler to wake emulated programs from sleep */
 	action.sa_handler	= sigh_sleep;
 	action.sa_flags		= SA_RESTART;
 	sigemptyset(&action.sa_mask);
 
 	/* SIGUSR1: Waken by timer */
 	sigaction(SIGUSR1, &action, NULL);
+
+	/* And a SIGUSR2 handler to stop emulation when the window is closed */
+	action.sa_handler	= sigh_close;
+	action.sa_flags		= SA_RESTART;
+	sigemptyset(&action.sa_mask);
+
+	/* SIGUSR2: Graphical window has been closed */
+	sigaction(SIGUSR2, &action, NULL);
+
+	//---
+	//	Emulate the provided program
+	//---
 
 	/* Parse command-line arguments */
 	opt_t opt;
@@ -422,15 +447,17 @@ int main(int argc, char **argv)
 
 	if(!opt.debugger)
 	{
-		while(cpu->ptr[PC] < mem->text && !cpu->h)
+		while(cpu->ptr[PC] < mem->text && !cpu->h && !cpu->s)
 			cpu_execute(cpu);
 
 		puts("At end of execution:");
 		cpu_dump(cpu, stdout);
 
 		/* In run mode, the execution may stop very quickly; leave the
-		   window open until the user closes it */
-		if(opt.graphical)
+		   window open until the user closes it.
+		   Do it only if the windows has not already been closed by the
+		   user (which whould result in cpu->s = 1) */
+		if(opt.graphical && !cpu->s)
 		{
 			graphical_freeze();
 			puts("\nThe program will exit when you close the "
