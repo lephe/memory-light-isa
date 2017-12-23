@@ -32,6 +32,7 @@ typedef struct
 	uint graphical	:1;
 	uint help	:1;
 	uint chip8	:1;
+	uint scale;
 
 	struct {
 		uint64_t text;
@@ -155,6 +156,17 @@ static void parse_args(int argc, char **argv, opt_t *opt)
 		/* Special handlers for the Chip8 emulator */
 		else if(!strcmp(arg, "--chip8")) opt->chip8 = 1;
 
+		/* Graphical screen scaling */
+		else if(!strcmp(arg, "--scale"))
+		{
+			arg = argv[++i];
+			if(!arg) error("expected integer after --scale");
+			uint s = atoi(arg);
+			if(s <= 0) warn("defaulting scale to 1"), s = 1;
+			if(s > 16) warn("defaulting scale to 16"), s = 16;
+			opt->scale = s;
+		}
+
 		/* Help message */
 		else if(!strcmp(arg, "--help")) opt->help = 1;
 
@@ -184,14 +196,20 @@ const char *help_string =
 "usage: %s [-r|-d] [-g] <binary> [options...]\n\n"
 
 "Available run modes (default is -r):\n"
-"  -r | --run	 Normal execution, shows CPU state when program ends\n"
+"  -r | --run         Normal execution, shows CPU state when program ends\n"
 "  -d | --debug       Run the debugger: step-by-step, breakpoints, etc\n"
 "  -g | --graphical   With -r or -d, enable graphical I/O using SDL\n\n"
 
 "Available options:\n"
+"  --scale <factor>   Set the scale factor of the graphical screen\n"
+"  --chip8            Enable special features for the chip8 emulator\n"
 "  --geometry <text>:<stack>:<data>:<vram>\n"
-"		     Set the size of the four memory segments ('k' or 'M'\n"
-"		     suffixes may be used)\n";
+"                     Set the size of the four memory segments ('k' or 'M'\n"
+"                     suffixes may be used)\n"
+"  --load <file>:<address>\n"
+"                     Load the requested file at the given address before\n"
+"                     starting emulation (address should be a multiple of 8)\n"
+;
 
 /* Emulated memory and CPU */
 static memory_t *mem	= NULL;
@@ -363,8 +381,7 @@ int main(int argc, char **argv)
 	sigemptyset(&action.sa_mask);
 
 	/* SIGUSR1: Waken by timer */
-	int x = sigaction(SIGUSR1, &action, NULL);
-	printf("%d\n", x);
+	sigaction(SIGUSR1, &action, NULL);
 
 	/* Parse command-line arguments */
 	opt_t opt;
@@ -373,6 +390,9 @@ int main(int argc, char **argv)
 	/* Check that a filename was provided */
 	if(argc == 1 || opt.help) help((const char **)argv);
 	if(!opt.filename) fatal("no input file");
+
+	/* Default the screen scale to 2 */
+	if(!opt.scale) opt.scale = 2;
 
 	/* Allocate a virtual memory and load the program into it */
 	mem = memory_new(opt.text, opt.stack, opt.data, opt.vram);
@@ -393,9 +413,10 @@ int main(int argc, char **argv)
 	if(opt.graphical)
 	{
 		void *vram = (void *)mem->mem + (mem->vram >> 3);
+		uint scale = opt.scale;
 		int result = !opt.chip8
-			? graphical_start(160, 128, vram, NULL, NULL, 2)
-			: graphical_start(64, 32, vram, chip8, cpu, 4);
+			? graphical_start(160, 128, vram, NULL, NULL, scale)
+			: graphical_start(64, 32, vram, chip8, cpu, scale);
 		if(result) return 1;
 	}
 
