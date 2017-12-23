@@ -33,6 +33,7 @@ typedef struct
 	uint graphical	:1;
 	uint help	:1;
 	uint chip8	:1;
+	uint textprog	:1;
 	uint scale;
 
 	struct {
@@ -154,6 +155,9 @@ static void parse_args(int argc, char **argv, opt_t *opt)
 				error("invalid load argument: '%s'", arg);
 		}
 
+		/* Load from a text program */
+		else if(!strcmp(arg, "--text")) opt->textprog = 1;
+
 		/* Special handlers for the Chip8 emulator */
 		else if(!strcmp(arg, "--chip8")) opt->chip8 = 1;
 
@@ -202,6 +206,7 @@ const char *help_string =
 "  -g | --graphical   With -r or -d, enable graphical I/O using SDL\n\n"
 
 "Available options:\n"
+"  --text             Load a text format program instead of a binary program\n"
 "  --scale <factor>   Set the scale factor of the graphical screen\n"
 "  --chip8            Enable special features for the chip8 emulator\n"
 "  --geometry <text>:<stack>:<data>:<vram>\n"
@@ -331,10 +336,10 @@ void chip8(const uint8_t *keyboard, void *arg)
 
 	#define _(x) SDL_SCANCODE_ ## x
 	SDL_Scancode keys[16] = {
-		_(1), _(2), _(3), _(4),
-		_(Q), _(W), _(E), _(R),
-		_(A), _(S), _(D), _(F),
-		_(Z), _(X), _(C), _(V),
+		_(X), _(1), _(2), _(3),
+		_(Q), _(W), _(E), _(A),
+		_(S), _(D), _(Z), _(C),
+		_(4), _(R), _(F), _(V),
 	};
 	#undef _
 
@@ -421,7 +426,11 @@ int main(int argc, char **argv)
 
 	/* Allocate a virtual memory and load the program into it */
 	mem = memory_new(opt.text, opt.stack, opt.data, opt.vram);
-	memory_load_program(mem, opt.filename);
+
+	/* Heed for both text and binary programs */
+	opt.textprog
+		? memory_load_text(mem, opt.filename)
+		: memory_load_program(mem, opt.filename);
 
 	/* Load an additional file if requested */
 	if(opt.load_file)

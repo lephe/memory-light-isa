@@ -91,6 +91,15 @@ memory_t *memory_new(uint64_t text, uint64_t stack, uint64_t data,
 void memory_load_program(memory_t *mem, const char *filename);
 
 /*
+	memory_load_text() -- load a text program into memory
+	Same as memory_load_program(), but handles textual (ASCII) programs.
+
+	@arg	mem		Memory to load the file into
+	@arg	filename	Text program to load
+*/
+void memory_load_text(memory_t *mem, const char *filename);
+
+/*
 	memory_load_file() -- load an additional file into memory
 	Loads the provided file at the given address in memory. The file must
 	fit in memory. Returns non-zero on error.

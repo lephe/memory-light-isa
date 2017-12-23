@@ -78,7 +78,7 @@ void memory_load_program(memory_t *mem, const char *filename)
 	{
 		error("program is too large to fit in the code/stack segment "
 			"(%d > %d)", 8 * size, mem->text);
-		note("you may want to change the memory geometry using "
+		note("you may want to change the memory geometry by using "
 			"--geometry");
 	}
 
@@ -105,6 +105,61 @@ void memory_load_program(memory_t *mem, const char *filename)
 
 	/* Set the length of the text section in the memory object */
 	mem->text = be64toh(header_text);
+}
+
+/* memory_load_text() -- load a text program into memory */
+void memory_load_text(memory_t *mem, const char *filename)
+{
+	if(!mem || !filename)
+		ifatal("memory_load_text(): NULL memory or filename");
+
+	/* Open the file for reading */
+	error_clear();
+	FILE *fp = fopen(filename, "r");
+	if(!fp) fatal("# cannot open '%s'", filename);
+
+	uint64_t address = 0;
+
+	char buffer[256];
+	while(!feof(fp))
+	{
+		size_t x = fread(buffer, 1, 256, fp);
+		if(!x)
+		{
+			error("# cannot read from '%s'", filename);
+			break;
+		}
+
+		for(size_t i = 0; i < x; i++)
+		{
+			int c = buffer[i] - '0';
+			if((unsigned)c > 1) continue;
+
+			if(address >= mem->text)
+			{
+				error("program is too large to fit in the code"
+					"/stack segment (%d)", mem->text);
+				note("you may want to change the memory "
+					"geometry by using --geometry");
+				break;
+			}
+
+			if(c)
+			{
+				uint64_t mask = 1ul << (63 - (address & 63));
+				uint64_t *ptr = &mem->mem[address >> 6];
+				uint64_t cell = be64toh(*ptr);
+				*ptr = htobe64(cell | mask);
+			}
+			address++;
+		}
+	}
+
+	fclose(fp);
+	error_check();
+
+	/* Set the length of the text section in the memory object */
+	mem->text = address;
 }
 
 /* memory_load_file() -- load an additional file into memory */
