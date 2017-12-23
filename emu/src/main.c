@@ -323,6 +323,12 @@ void chip8(const uint8_t *keyboard, void *arg)
 	uint64_t timer_audio	= 0x881f0, audio;
 	uint64_t timer_cpufreq	= 0x88240, cpufreq;
 
+	/* Wake up the sleeping processor */
+	kill(main_thread, SIGUSR1);
+
+	/* Do not try to interact with the memory if emulation has stopped */
+	if(cpu->s) return;
+
 	delay = memory_read(cpu->mem, timer_delay, 8);
 	if(delay) memory_write(cpu->mem, timer_delay, delay - 1, 8);
 
@@ -351,9 +357,6 @@ void chip8(const uint8_t *keyboard, void *arg)
 	}
 
 	memory_write(cpu->mem, keybuffer, state, 16);
-
-	/* Wake up the sleeping processor */
-	kill(main_thread, SIGUSR1);
 }
 
 /*

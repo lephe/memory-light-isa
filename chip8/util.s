@@ -71,8 +71,7 @@ _wait_loop:
 	cmp	r0 r1
 	jumpif	neq _wait_end
 
-	; sleep 0
-	.const	9 #111110100
+	sleep	0
 	jump	_wait_loop
 
 _wait_end:

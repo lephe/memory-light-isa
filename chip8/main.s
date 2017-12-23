@@ -398,10 +398,7 @@ _cxnn:
 	; vx = rand() & 0xnn
 	cmpi	r4 0xd000
 	jumpif	ge _dxyn
-
-	; rand r0
-	.const 10 #1111110000
-
+	rand	r0
 	and3	r2 r0 r4
 	and2i	r2 0xff
 	shift	right r4 8

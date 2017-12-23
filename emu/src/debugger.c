@@ -421,7 +421,7 @@ void debugger(const char *filename, cpu_t *cpu)
 	char *cmd, **argv;
 	int argc;
 
-	while(!cpu->s)
+	while(1)
 	{
 		/* Get a string, and find out the command name */
 		cmd = debugger_prompt(&argv);
