@@ -1,0 +1,5 @@
+add2 177928   add2i 274739    sub2 0        sub2i 60833      cmp 151601    cmpi 111674688     let 675450    leti 646242
+shift 227957  readze 111645353  readse 0         jump 136380  jumpif 111887125     or2 25156     or2i 0         and2 0     
+and2i 45979    write 369106    call 728721  setctr 111982951  getctr 691137    push 486363  return 728720    add3 2     
+add3i 121506    sub3 6        sub3i 0         and3 20       and3i 121320     or3 0         or3i 0         xor3 0     
+xor3i 25138     asr3 0        sleep 11812     rand 20       (res) 0
