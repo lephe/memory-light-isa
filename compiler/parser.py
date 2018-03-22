@@ -43,9 +43,9 @@ class Parser(object):
             elif token.typ is LexType.NEWLINE:
                 try:
                     self.handle_one()
-                except ParserError as e:
-                    print("/!\ Parser Error in file \"{token.filename}\" line {token.line}:".format(**locals()))
-                    print("/!\       {e}".format(**locals()))
+                except ParserError:
+                    print("/!\\ Parser Error in file \"{token.filename}\" line {token.line}:".format(**locals()))
+                    print("/!\\       {e}".format(**locals()))
                     sys.exit(1)
 
                 while not self.out_stack.is_empty():
@@ -99,6 +99,9 @@ class Parser(object):
 
         typed_args = []
 
+        if len(args_values) != len(goal_args_type):
+            raise ParserError("couldn't read {goal_type.name} : too much or not enoutgh arguments...")
+
         for value, goal_type in zip(args_values, goal_args_type):
             method_name = "read_" + goal_type.name.lower()
             if not hasattr(self, method_name):
@@ -108,10 +111,9 @@ class Parser(object):
 
             try:
                 typed_value = Value(goal_type, method(value))
-            except AssertionError as e:
+            except AssertionError:
                 raise ParserError(
-                    "couldn't read {goal_type.name} : The value is not in the \
-right range".format(**locals()))
+                    "couldn't read {goal_type.name} : The value is not in the right range".format(**locals()))
 
             typed_args.append(typed_value)
 
