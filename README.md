@@ -5,9 +5,15 @@ le dossier /chip8. Du code, les seules choses intéressantes sont l'émulation d
 jeu d'instructions (dans /chip8/main.s) et l'organisation des informations dans
 la mémoire de l'émulateur (voir /doc/chip8_memory.md).
 
-Un script, /play.sh, se trouve à la racine du projet pour lancer quelques jeux.
-Pour lancer un jeu, essayez `/play.sh BRIX` (par exemple). Une description des
-jeux disponibles se trouve à la fin de ce fichier.
+## Utilisation
+
+Pour compiler l'émulateur, rendez-vous dans le dossier /emu et lancez make.
+L'émulateur chip8 est fourni déjà compilé ; si vous voulez le recompiler,
+lancez `make -B` depuis le dossier /chip8.
+
+Un script, /play.sh, se trouve à la racine du projet pour lancer quelques
+jeux ; essayez par exemple `./play.sh BRIX`. Une description des jeux
+disponibles se trouve à la fin de ce fichier.
 
 ## Description des jeux
 
