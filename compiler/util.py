@@ -99,10 +99,10 @@ def huffman(ctr):
             forest.append((freq, [("", key)]))
 
 
-    if len(forest) is 0:
+    if len(forest) == 0:
         return []
 
-    if len(forest) is 1:
+    if len(forest) == 1:
         # Unique key.
         return ["0", forest[0][0][1]]
 

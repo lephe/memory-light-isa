@@ -26,18 +26,18 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
             else:
                 fullcode.append((len("".join(acc.split())), acc))
 
-                if line.funcname is "label":
+                if line.funcname == "label":
                     bitcode = ""
                 else:
                     bitcode = self.huffman_tree[line.funcname[:-1]]
 
-                if line.funcname is "jumpl":
+                if line.funcname == "jumpl":
                     fullcode.append((len(bitcode), line))
-                elif line.funcname is "jumpifl":
+                elif line.funcname == "jumpifl":
                     fullcode.append((len(bitcode) + 3, line))
-                elif line.funcname is "calll":
+                elif line.funcname == "calll":
                     fullcode.append((len(bitcode), line))
-                elif line.funcname is "label":
+                elif line.funcname == "label":
                     fullcode.append((0, line))
 
                 acc = ""
@@ -52,7 +52,7 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
         label_dict = dict()
         for i, (l, x) in enumerate(fullcode):
             if type(x) is Line:
-                if x.funcname is "label":
+                if x.funcname == "label":
                     label = x.typed_args[0].raw_value
                     label_dict[label] = i
 
@@ -98,9 +98,9 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
 
             for j, (l, x) in enumerate(fullcode):
                 if type(x) is Line and x.funcname in ("jumpl", "jumpifl"):
-                    if x.funcname is "jumpl":
+                    if x.funcname == "jumpl":
                         label = x.typed_args[0].raw_value
-                    elif x.funcname is "jumpifl":
+                    elif x.funcname == "jumpifl":
                         label = x.typed_args[1].raw_value
 
                     if label not in label_dict:
@@ -120,7 +120,7 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
                     else:
                         addr_values[j] = (nb_bit, s)
 
-                if type(x) is Line and x.funcname is "calll":
+                if type(x) is Line and x.funcname == "calll":
                     label = x.typed_args[0].raw_value
 
                     if label not in label_dict:
@@ -150,15 +150,15 @@ class LabelsClearTextBackEnd(CleartextBitcodeBackEnd):
         for i, (l, x) in enumerate(fullcode):
             if type(x) is str:
                 endcode.append(x)
-            elif type(x) is Line and x.funcname is "label":
+            elif type(x) is Line and x.funcname == "label":
                 pass
 
-            # x.funcname is "jumpl" or "jumpifl" or "call"
+            # x.funcname == "jumpl" or "jumpifl" or "call"
             elif type(x) is Line:
                 bitcode = " " + self.huffman_tree[x.funcname[:-1]]
 
                 endcode.append(bitcode)
-                if x.funcname is "jumpifl":
+                if x.funcname == "jumpifl":
                     cond = x.typed_args[0].raw_value
                     endcode.append(" " + self.bin_condition(cond))
                 k, n = addr_values[i]

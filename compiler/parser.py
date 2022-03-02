@@ -64,11 +64,11 @@ class Parser(object):
             else:
                 break
         else:
-            if len(res) is 1 and res[0].typ is LexType.LABEL:
+            if len(res) == 1 and res[0].typ is LexType.LABEL:
                 res.push(Token(LexType.OPERATION, "label", res[0].filename,
                                res[0].line, res[0].column))
                 return tuple(res)
-            elif len(res) is not 0:
+            elif len(res) != 0:
                 print(res)
                 raise ParserError("The stack is empty : couldn't find operand")
             else:
@@ -80,7 +80,7 @@ class Parser(object):
     def handle_one(self):
         res = self.unstack_until_operation()
 
-        if len(res) is 0:
+        if len(res) == 0:
             return None
 
         fun_name = res[0].value
