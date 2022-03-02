@@ -8,3 +8,4 @@ all:
 clean:
 	(cd prog; make clean)
 	(cd emu; make distclean)
+	(cd chip8; make clean)
