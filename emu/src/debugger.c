@@ -299,12 +299,12 @@ static void draw_reg(void)
 
 	const char *ptrs[] = { "PC", "SP", "A0", "A1" };
 	for(size_t i = 0; i < 4; i++)
-		mvwprintw(wreg, 2 + i, 3, "%s  %08x", ptrs[i], cpu->ptr[i]);
+		mvwprintw(wreg, 2 + i, 3, "%s  %08lx", ptrs[i], cpu->ptr[i]);
 
 	/* General-purpose registers */
 
 	for(size_t i = 0; i < 8; i++)
-		mvwprintw(wreg, 7 + i, 3, "r%d  %016lx", i, cpu->r[i]);
+		mvwprintw(wreg, 7 + i, 3, "r%zu  %016lx", i, cpu->r[i]);
 
 	/* Processor flags */
 

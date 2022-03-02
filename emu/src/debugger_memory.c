@@ -40,7 +40,7 @@ void debugger_memory(void)
 	{
 		if(src + 64 > debugger_mem->memsize) break;
 
-		mvwprintw(wmem, row, 3, "%08x", src);
+		mvwprintw(wmem, row, 3, "%08lx", src);
 
 		data = memory_read(debugger_mem, src, 64);
 		uint16_t d1 = data >> 48;
@@ -48,7 +48,7 @@ void debugger_memory(void)
 		uint16_t d3 = (data >> 16) & 0xffff;
 		uint16_t d4 = data & 0xffff;
 
-		wprintw(wmem, "  %04lx %04lx %04lx %04lx", d1, d2, d3, d4);
+		wprintw(wmem, "  %04x %04x %04x %04x", d1, d2, d3, d4);
 		src += 64;
 	}
 

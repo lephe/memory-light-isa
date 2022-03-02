@@ -183,7 +183,7 @@ static void debugger_disasm(uint64_t ptr)
 
 			wmove(wcode, row, geom_info);
 			wattron(wcode, style);
-			wprintw(wcode, "%0*x:  ", geom_addr, copy);
+			wprintw(wcode, "%0*lx:  ", geom_addr, copy);
 			wattroff(wcode, style);
 		}
 
